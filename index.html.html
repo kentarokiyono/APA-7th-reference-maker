@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://api.crossref.org https://api.openalex.org https://api.semanticscholar.org https://api.datacite.org https://www.googleapis.com https://openlibrary.org https://cir.nii.ac.jp https://ndlsearch.ndl.go.jp https://eutils.ncbi.nlm.nih.gov https://api.allorigins.win; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>APA参考文献ビルダー</title>
+<style>
+:root{
+  --ink:#1B2E4A;
+  --ink-soft:#5A6A82;
+  --paper:#E6E8EC;
+  --card:#FFFFFF;
+  --rule:#C3C9D4;
+  --brass:#7A5C1E;
+  --brass-soft:#F0E9D6;
+  --warn:#8A3324;
+  --sans:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  --serif:"Times New Roman",Times,"YuMincho","Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px 80px}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:20px}
+h1{font-family:var(--serif);font-size:28px;font-weight:700;margin:0}
+header p{margin:4px 0 0;color:var(--ink-soft);font-size:13px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin:0 0 6px}
+section{background:var(--card);border:1px solid var(--rule);margin-bottom:16px}
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule);background:#F7F8FA;flex-wrap:wrap}
+.sec-head h2{font-size:13px;margin:0;font-weight:600;letter-spacing:.04em}
+.sec-body{padding:14px}
+.searchbar{display:flex;gap:8px;flex-wrap:wrap}
+input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:0;padding:9px 10px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+textarea{resize:vertical;min-height:56px;font-size:14px}
+button{font-family:inherit;font-size:14px;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink);padding:9px 16px}
+button:hover{background:#26405f}
+button.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+button.ghost:hover{background:#EEF1F5}
+button.small{padding:5px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:default}
+.hint{font-size:12px;color:var(--ink-soft);margin:8px 0 0}
+.qbox{flex:1 1 260px;width:auto}
+.panel-sub{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+.short{min-height:44px}
+.row.tight{margin-top:0}
+.privacy{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0}
+.privacy b{color:var(--ink);font-weight:600}
+.results{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
+.results li{border-top:1px solid var(--rule);padding:10px 14px;cursor:pointer}
+.results li:first-child{border-top:none}
+.results li:hover,.results li:focus-visible{background:var(--brass-soft);outline:none}
+.r-title{font-family:var(--serif);font-size:17px;line-height:1.35}
+.r-meta{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);border:1px solid var(--brass);padding:1px 5px;margin-right:6px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 12px}
+.grid>div{grid-column:span 2}
+.grid>div.full{grid-column:1/-1}
+.grid>div.qtr{grid-column:span 1}
+label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:3px}
+.output{font-family:var(--serif);font-size:18px;line-height:1.5;padding:16px 16px 16px 20px;border-left:3px solid var(--brass);background:#FBFAF7;padding-left:calc(20px + 2.2em);text-indent:-2.2em}
+.intext{font-family:var(--serif);font-size:16px;margin-top:10px;color:var(--ink-soft)}
+.intext b{font-weight:400;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.list{list-style:none;margin:0;padding:0}
+.list li{font-family:var(--serif);font-size:17px;border-top:1px solid var(--rule);padding:12px 70px 12px calc(14px + 2.2em);text-indent:-2.2em;position:relative}
+.list li:first-child{border-top:none}
+.list .del{position:absolute;right:8px;top:9px;text-indent:0}
+.empty{padding:14px;color:var(--ink-soft);font-size:13px;font-family:var(--sans);text-indent:0}
+.status{font-size:13px;color:var(--ink-soft);padding:12px 14px;border-top:1px solid var(--rule)}
+.status.err{color:var(--warn)}
+.toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin:0}
+.toggle input{width:auto}
+.proxy-row{margin:10px 0 8px}
+.opts{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.count{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+@media(max-width:700px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .grid>div.qtr{grid-column:span 1}
+  .output,.list li{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">APA 7th edition</p>
+  <h1>参考文献ビルダー</h1>
+  <p>タイトル・DOI・ISBN・URL・PMID を入れると、8つの書誌データベースを同時に検索して参考文献の形に整えます。</p>
+</header>
+
+<section>
+  <div class="sec-head">
+    <h2>1. 検索</h2>
+    <label class="toggle"><input type="checkbox" id="jp-src" checked>日本語データベース（CiNii・国会図書館）も使う</label>
+  </div>
+  <div class="sec-body">
+    <div class="searchbar">
+      <input id="q" placeholder="タイトル / DOI / ISBN / URL / PMID" class="qbox">
+      <button id="go">検索</button>
+    </div>
+    <p class="hint">Crossref・OpenAlex・Semantic Scholar・DataCite・Google Books・Open Library・CiNii Research・国立国会図書館サーチ。DOI/ISBN/PMID/arXivは直接照会、Webページは本文からメタデータを抽出します。</p>
+    <div class="panel-sub">
+      <label for="mailto">連絡先メールアドレス（任意）— Crossref と OpenAlex の優先処理枠（polite pool）に入り、混雑時も速くなる。この端末にのみ保存され、送信先は両APIだけ。</label>
+      <input id="mailto" type="email" placeholder="you@example.ac.jp" autocomplete="email">
+      <p class="hint" id="mailto-state"></p>
+      <label class="toggle proxy-row"><input type="checkbox" id="use-proxy">中継サーバー（allorigins）の使用を許可する</label>
+      <p class="privacy">外部に出るのは<b>検索のときだけ</b>です。整形・編集・リスト・コピー・保存はすべてこの端末の中で完結し、入力内容やリストはどこにも送信・保存されません（保存されるのは上のメールアドレスのみ、この端末のブラウザ内）。中継サーバーを許可すると、CORSを許可していない先（CiNii・国会図書館・一般Webページ）も取得できますが、<b>その取得先URLが第三者のサーバーを経由します</b>。既定はオフです。</p>
+    </div>
+  </div>
+  <div id="status" class="status" hidden></div>
+  <ul id="results" class="results"></ul>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>2. 内容の確認・修正</h2>
+    <div class="opts">
+      <label class="toggle"><input type="checkbox" id="sentence" checked>タイトルを sentence case に</label>
+      <label class="toggle"><input type="checkbox" id="jp-note">末尾に (in Japanese)</label>
+      <label class="toggle"><input type="checkbox" id="no-doi">DOI・URLを出力しない</label>
+    </div>
+  </div>
+  <div class="sec-body">
+    <div class="grid">
+      <div class="full" id="w-type">
+        <label for="f-type">資料の種類</label>
+        <select id="f-type"></select>
+      </div>
+      <div class="full" id="w-authors">
+        <label for="f-authors">著者（1人1行 / 「姓, 名」。団体名はそのまま1行）</label>
+        <textarea id="f-authors" placeholder="Kiyono, Kentaro"></textarea>
+      </div>
+      <div id="w-year">
+        <label for="f-year">日付</label>
+        <input id="f-year" placeholder="2026 / 2026, August 3">
+      </div>
+      <div id="w-doi">
+        <label for="f-doi">DOI または URL</label>
+        <input id="f-doi">
+      </div>
+      <div class="full" id="w-title">
+        <label for="f-title">タイトル</label>
+        <textarea id="f-title"></textarea>
+      </div>
+      <div class="full" id="w-translated">
+        <label for="f-translated">訳題（英語論文に和文献を入れる場合。角括弧で出力）</label>
+        <input id="f-translated" placeholder="Tourism-led recovery in Okuma Town">
+      </div>
+      <div class="full" id="w-container">
+        <label for="f-container">掲載誌</label>
+        <input id="f-container">
+      </div>
+      <div class="qtr" id="w-volume"><label for="f-volume">巻</label><input id="f-volume"></div>
+      <div class="qtr" id="w-issue"><label for="f-issue">号</label><input id="f-issue"></div>
+      <div id="w-pages"><label for="f-pages">ページ</label><input id="f-pages" placeholder="45-67"></div>
+      <div id="w-number"><label for="f-number">番号</label><input id="f-number"></div>
+      <div id="w-edition"><label for="f-edition">版 / バージョン</label><input id="f-edition"></div>
+      <div id="w-publisher"><label for="f-publisher">出版社 / 発行機関</label><input id="f-publisher"></div>
+      <div id="w-location"><label for="f-location">開催地</label><input id="f-location"></div>
+      <div class="full" id="w-editors"><label for="f-editors">編者（1人1行）</label><textarea id="f-editors" class="short"></textarea></div>
+      <div class="full" id="w-descriptor"><label for="f-descriptor">角括弧の注記（自動。上書き可）</label><input id="f-descriptor" placeholder="Data set / Map / Press release など"></div>
+      <div class="full" id="w-retrieved"><label for="f-retrieved">閲覧日（内容が変わるページのみ。例: August 3, 2026）</label><input id="f-retrieved"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>3. 出力</h2></div>
+  <div class="sec-body">
+    <div id="out" class="output">まだ何も選ばれていません。</div>
+    <div class="intext">本文中：<b id="intext-p"></b> ／ 文章形式：<b id="intext-n"></b></div>
+    <div class="row">
+      <button id="copy">参考文献をコピー</button>
+      <button id="copy-in" class="ghost">本文中の引用をコピー</button>
+      <button id="add" class="ghost">リストに追加</button>
+      <button id="reset" class="ghost">入力を空にする</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>参考文献リスト</h2>
+    <span class="count" id="count">0件</span>
+  </div>
+  <ul id="list" class="list"></ul>
+  <div class="sec-body">
+    <div class="row tight">
+      <button id="copy-all" class="ghost">全部コピー（アルファベット順）</button>
+      <button id="download" class="ghost">.txt で保存</button>
+      <button id="clear" class="ghost">リストを空にする</button>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ============ 資料タイプ定義 ============ */
+/* standalone: タイトル自体を斜体にする（単独刊行物）か否か */
+const TYPES = {
+  journal:   {ja:"雑誌論文", standalone:false, show:["container","volume","issue","pages","number"], labels:{container:"掲載誌", number:"論文番号"}},
+  magazine:  {ja:"一般雑誌記事", standalone:false, show:["container","volume","issue","pages"], labels:{container:"雑誌名"}},
+  newspaper: {ja:"新聞記事", standalone:false, show:["container","pages"], labels:{container:"新聞名"}},
+  book:      {ja:"書籍", standalone:true, show:["edition","publisher"], labels:{}},
+  editedbook:{ja:"編著書（全体）", standalone:true, show:["editors","edition","publisher"], labels:{}},
+  chapter:   {ja:"書籍の1章", standalone:false, show:["editors","container","edition","pages","publisher"], labels:{container:"書名"}},
+  encyclopedia:{ja:"事典項目", standalone:false, show:["editors","container","edition","pages","publisher"], labels:{container:"事典名"}},
+  conference:{ja:"学会発表論文（予稿集）", standalone:false, show:["container","pages","publisher"], labels:{container:"予稿集名"}},
+  presentation:{ja:"学会発表（口頭・ポスター）", standalone:true, show:["container","location"], labels:{container:"学会名"}, desc:"Conference presentation"},
+  report:    {ja:"報告書 / 白書", standalone:true, show:["number","publisher"], labels:{number:"報告書番号"}},
+  preprint:  {ja:"プレプリント", standalone:true, show:["container"], labels:{container:"リポジトリ名"}, desc:"Preprint"},
+  thesis:    {ja:"学位論文", standalone:true, show:["publisher","container"], labels:{publisher:"授与大学", container:"データベース名"}, desc:"Doctoral dissertation"},
+  webpage:   {ja:"Webページ", standalone:true, show:["container","retrieved"], labels:{container:"サイト名"}},
+  blog:      {ja:"ブログ記事", standalone:false, show:["container"], labels:{container:"ブログ名"}},
+  news_web:  {ja:"Web記事（ニュースサイト）", standalone:false, show:["container"], labels:{container:"サイト名"}},
+  dataset:   {ja:"データセット", standalone:true, show:["edition","publisher"], labels:{}, desc:"Data set"},
+  statistics:{ja:"統計表", standalone:true, show:["publisher","retrieved"], labels:{publisher:"作成機関"}, desc:"Data set"},
+  software:  {ja:"ソフトウェア", standalone:true, show:["edition","publisher"], labels:{}, desc:"Computer software"},
+  video:     {ja:"動画（YouTube等）", standalone:true, show:["container"], labels:{container:"プラットフォーム"}, desc:"Video"},
+  podcast:   {ja:"ポッドキャスト", standalone:false, show:["container","number","publisher"], labels:{container:"番組名", number:"エピソード番号"}, desc:"Audio podcast episode"},
+  social:    {ja:"SNS投稿", standalone:true, show:["container"], labels:{container:"プラットフォーム"}, desc:"Post"},
+  press:     {ja:"プレスリリース", standalone:true, show:["publisher"], labels:{}, desc:"Press release"},
+  standard:  {ja:"規格", standalone:true, show:["number","publisher"], labels:{number:"規格番号"}, descNum:"Standard No."},
+  map:       {ja:"地図", standalone:true, show:["publisher"], labels:{}, desc:"Map"},
+  law:       {ja:"法令・条例", standalone:true, show:["number","publisher"], labels:{number:"法令番号"}},
+  manuscript:{ja:"未公刊資料", standalone:true, show:["publisher"], labels:{publisher:"所属機関"}, desc:"Unpublished manuscript"},
+  other:     {ja:"その他", standalone:true, show:["container","volume","issue","pages","number","edition","publisher","editors","location"], labels:{}}
+};
+const ALL_FIELDS = ["container","volume","issue","pages","number","edition","publisher","editors","location","retrieved"];
+const BASE_LABELS = {container:"掲載誌 / 書名 / サイト名", volume:"巻", issue:"号", pages:"ページ",
+  number:"番号", edition:"版 / バージョン", publisher:"出版社 / 発行機関", editors:"編者（1人1行）",
+  location:"開催地", retrieved:"閲覧日（内容が変わるページのみ。例: August 3, 2026）"};
+
+const sel = $("f-type");
+Object.entries(TYPES).forEach(([k, v]) => {
+  const o = document.createElement("option");
+  o.value = k; o.textContent = v.ja; sel.appendChild(o);
+});
+
+/* ============ ユーティリティ ============ */
+function blank(){
+  return {type:"journal", year:"", authors:[], title:"", translated:"", container:"", volume:"",
+    issue:"", pages:"", number:"", edition:"", publisher:"", editors:[], location:"",
+    descriptor:"", retrieved:"", doi:"", source:""};
+}
+let entry = blank();
+let saved = [];
+let candidates = [];
+
+const isCJK = s => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]/.test(s || "");
+const stripTags = s => (s || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+const esc = s => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const dash = s => (s || "").replace(/\s*[-–—]\s*/g, "–");
+
+function initials(given){
+  if(!given) return "";
+  return given.trim().split(/\s+/).map(part =>
+    part.split("-").map(p => {
+      const c = p.replace(/[.\s]/g, "").charAt(0);
+      return c ? c.toUpperCase() + "." : "";
+    }).filter(Boolean).join("-")
+  ).filter(Boolean).join(" ");
+}
+
+function looksTitleCase(s){
+  const w = s.split(/\s+/).filter(x => x.length > 3);
+  if(w.length < 3) return false;
+  return w.filter(x => /^[A-Z]/.test(x)).length / w.length > 0.6;
+}
+
+/* sentence case: 固有名詞を壊さないよう「小文字にしてよい語」を判定する。
+   判定順 = 頭字語 → 文頭 → 固有名詞リスト → 地名語（直前が固有名詞のとき） → 一般語 → 接尾辞 → 残りは大文字のまま */
+const COMMON = new Set(("a an the and or but not no nor of in on at by for with from to into onto upon "+
+"as is are was were be been being do does did has have had can could may might must shall should will would "+
+"this that these those it its their his her our your my we they he she you i "+
+"about above across after against along among around before behind below beneath beside besides between beyond "+
+"during except inside outside over through throughout toward towards under underneath until up via within without "+
+"more most less least many much few several such same other others another each every both all any some none "+
+"new old first second third early late later recent current future past present initial final "+
+"case cases study studies research analysis analyses review overview survey report reports paper papers article "+
+"approach approaches method methods methodology framework model models theory theories concept concepts "+
+"effect effects impact impacts influence outcome outcomes result results finding findings evidence "+
+"factor factors role roles use uses using used application applications practice practices process processes "+
+"system systems network networks structure structures pattern patterns trend trends change changes "+
+"development developments growth decline increase decrease reduction improvement "+
+"management planning policy policies strategy strategies governance decision decisions "+
+"community communities society social economic economy economics political culture cultural "+
+"population populations resident residents people person household households citizen citizens "+
+"health healthcare medical clinical mental physical wellbeing risk risks safety exposure dose "+
+"radiation nuclear radioactive contamination decontamination emission emissions pollution "+
+"disaster disasters earthquake tsunami flood flooding typhoon hazard hazards emergency crisis "+
+"evacuation evacuees recovery reconstruction rehabilitation resilience vulnerability preparedness mitigation "+
+"tourism tourist tourists travel visitor visitors heritage destination destinations hospitality "+
+"region regional local national international global rural urban coastal inland "+
+"land landscape environment environmental ecological ecosystem climate weather energy water soil air forest "+
+"data dataset information knowledge evidence indicator indicators index measurement assessment evaluation "+
+"education educational learning teaching training school schools student students "+
+"industry industries agriculture agricultural fishery fisheries manufacturing business businesses market markets "+
+"transport transportation infrastructure housing building buildings facility facilities service services "+
+"migration mobility depopulation aging ageing demographic demography age gender women men children youth elderly "+
+"public private government governmental municipal administrative institutional "+
+"design designed development based driven led oriented related associated compared comparative "+
+"analysis empirical quantitative qualitative statistical spatial temporal experimental theoretical "+
+"between within across toward lessons lesson perspective perspectives implication implications challenge challenges "+
+"role importance significance relationship relationships difference differences similarity "+
+"quality quantity level levels rate rates scale scales size number amount "+
+"toward evidence potential possible necessary important major minor main key core "+
+"long short term terms year years month months day days time times period stage stages phase phases "+
+"life living work working home place places space spaces area areas site sites zone zones "+
+"support recovery response responses reaction adaptation adaptive sustainable sustainability "+
+"question questions issue issues problem problems solution solutions "+
+"introduction conclusion discussion background context overview summary "+
+"accident accidents incident incidents damage damages loss losses death deaths injury injuries victim victims "+
+"post pre non anti inter intra multi sub trans cross self semi mid co re counter over under").split(/\s+/));
+
+const GEO = new Set(("city town village ward district prefecture province county state region island islands "+
+"bay river valley mountain mountains peninsula coast basin plain lake sea gulf strait canal "+
+"university institute college school hospital museum station port airport temple shrine park "+
+"government ministry agency bureau department center centre street road bridge dam plant").split(" "));
+
+const PROPER = new Set(("january february march april may june july august september october november december "+
+"monday tuesday wednesday thursday friday saturday sunday "+
+"beijing nanjing chongqing kunming wyoming reading hastings bath nice mobile turkey jordan chad mali china "+
+"cologne florence naples").split(/\s+/));
+
+const SUFFIX = /(tion|sion|ment|ness|ance|ence|ity|ism|ology|ography|graphy|ship|ships|able|ible|ical|less|ful|ous|ive|ives)$/;
+
+function sentenceCase(str){
+  const s = stripTags(str);
+  if(!s || isCJK(s) || !looksTitleCase(s)) return s;
+  let capNext = true, prevKeptCap = false;
+  return s.split(/(\s+)/).map(w => {
+    if(!w.trim()) return w;
+    const endsSentence = /[.:?!]["')\]]*$/.test(w);
+    let keptCap = false;
+    const out = w.split("-").map((p, i) => {
+      const core = p.replace(/[^A-Za-z']/g, "");
+      if(!core) return p;
+      const lower = core.toLowerCase();
+      if(core.length > 1 && core === core.toUpperCase()){ keptCap = true; return p; }
+      if(/[a-z][A-Z]/.test(p)){ keptCap = true; return p; }
+      if(!/^[A-Z]/.test(p)) return p;
+      if(capNext && i === 0) return p;
+      if(PROPER.has(lower)){ keptCap = true; return p; }
+      if(GEO.has(lower) && (prevKeptCap || keptCap)){ keptCap = true; return p; }
+      if(COMMON.has(lower) || SUFFIX.test(lower)) return p.charAt(0).toLowerCase() + p.slice(1);
+      keptCap = true;
+      return p;
+    }).join("-");
+    prevKeptCap = keptCap;
+    capNext = endsSentence;
+    return out;
+  }).join("");
+}
+
+function parsePeople(text){
+  return (text || "").split(/[\n;]/).map(line => {
+    const t = line.trim();
+    if(!t) return null;
+    if(t.includes(",")){
+      const [family, ...rest] = t.split(",");
+      return {family: family.trim(), given: rest.join(",").trim()};
+    }
+    if(isCJK(t)) return {family: t, given: ""};
+    const parts = t.split(/\s+/);
+    if(parts.length === 1) return {family: t, given: ""};
+    return {family: parts.pop(), given: parts.join(" ")};
+  }).filter(Boolean);
+}
+const peopleToText = list => list.map(a => a.given ? `${a.family}, ${a.given}` : a.family).join("\n");
+const isOrg = a => !a.given && /\s/.test(a.family) && !isCJK(a.family);
+
+function nameInverted(a){
+  if(isCJK(a.family + a.given)) return (a.family + (a.given ? " " + a.given : "")).trim();
+  if(isOrg(a)) return a.family;
+  const ini = initials(a.given);
+  return ini ? `${a.family}, ${ini}` : a.family;
+}
+function nameForward(a){
+  if(isCJK(a.family + a.given) || isOrg(a)) return (a.family + (a.given ? " " + a.given : "")).trim();
+  const ini = initials(a.given);
+  return ini ? `${ini} ${a.family}` : a.family;
+}
+function joinAuthors(list){
+  const n = list.map(nameInverted);
+  if(!n.length) return "";
+  if(n.length === 1) return n[0];
+  if(n.length === 2) return `${n[0]}, & ${n[1]}`;
+  if(n.length <= 20) return `${n.slice(0, -1).join(", ")}, & ${n[n.length - 1]}`;
+  return `${n.slice(0, 19).join(", ")}, . . . ${n[n.length - 1]}`;
+}
+function joinEditors(list){
+  const n = list.map(nameForward);
+  if(!n.length) return "";
+  if(n.length === 1) return n[0];
+  if(n.length === 2) return `${n[0]} & ${n[1]}`;
+  return `${n.slice(0, -1).join(", ")}, & ${n[n.length - 1]}`;
+}
+
+function linkOf(e){
+  const d = (e.doi || "").trim();
+  if(!d) return "";
+  const m = d.match(/10\.\d{4,9}\/[^\s"<>]+/);
+  if(m) return "https://doi.org/" + m[0].replace(/[.,;)\]]+$/, "");
+  return d;
+}
+
+/* ============ APA 組み立て ============ */
+function buildHTML(e, o){
+  o = o || {};
+  const optSentence = o.sentence !== undefined ? o.sentence : $("sentence").checked;
+  const optJpNote = o.jpNote !== undefined ? o.jpNote : $("jp-note").checked;
+  const optNoDoi = o.noDoi !== undefined ? o.noDoi : $("no-doi").checked;
+  const t = TYPES[e.type] || TYPES.other;
+  const A = joinAuthors(e.authors);
+  const year = e.year.trim() || "n.d.";
+  let titleText = optSentence ? sentenceCase(e.title) : stripTags(e.title);
+  if(!titleText && !A) return "";
+  let T = esc(titleText);
+  if(e.translated.trim()) T += ` [${esc(stripTags(e.translated))}]`;
+  const title = t.standalone ? `<em>${T}</em>` : T;
+
+  const C = esc(stripTags(e.container));
+  const P = esc(stripTags(e.publisher));
+  const pages = esc(dash(e.pages));
+  const url = optNoDoi ? "" : linkOf(e);
+  const link = url ? (e.retrieved.trim()
+    ? `Retrieved ${esc(e.retrieved.trim())}, from ${esc(url)}`
+    : esc(url)) : "";
+
+  const descriptor = (e.descriptor || t.desc || "").trim();
+  const descPart = descriptor ? ` [${esc(descriptor)}]` : "";
+  const editors = joinEditors(e.editors);
+  const edLabel = e.editors.length > 1 ? "Eds." : "Ed.";
+
+  let head = A ? `${esc(A)} (${esc(year)}).` : `(${esc(year)}).`;
+  if(!A && C && ["webpage", "news_web", "press", "statistics"].includes(e.type)){
+    head = `${C} (${esc(year)}).`;
+  }
+  if(e.type === "editedbook" && editors && !A) head = `${esc(editors)} (${edLabel}). (${esc(year)}).`;
+
+  const parts = [];
+  const push = s => { if(s && s.trim()) parts.push(s.trim()); };
+
+  push(head);
+
+  switch(e.type){
+    case "journal":
+    case "magazine": {
+      push(title + descPart + ".");
+      if(C){
+        let s = `<em>${C}${e.volume ? ", " + esc(e.volume) : ""}</em>`;
+        if(e.issue) s += `(${esc(e.issue)})`;
+        if(pages) s += `, ${pages}`;
+        else if(e.number) s += `, Article ${esc(e.number)}`;
+        push(s + ".");
+      }
+      break;
+    }
+    case "newspaper": {
+      push(title + descPart + ".");
+      push(C ? `<em>${C}</em>${pages ? ", " + pages : ""}.` : "");
+      break;
+    }
+    case "book":
+    case "editedbook": {
+      let s = title;
+      if(e.edition) s += ` (${esc(e.edition)} ed.)`;
+      push(s + descPart + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "chapter":
+    case "encyclopedia": {
+      push(title + descPart + ".");
+      let s = "In ";
+      if(editors) s += `${esc(editors)} (${edLabel}), `;
+      s += `<em>${C}</em>`;
+      const inner = [];
+      if(e.edition) inner.push(`${esc(e.edition)} ed.`);
+      if(pages) inner.push(`pp. ${pages}`);
+      if(inner.length) s += ` (${inner.join(", ")})`;
+      push(s + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "conference": {
+      push(title + descPart + ".");
+      push(C ? `In <em>${C}</em>${pages ? ` (pp. ${pages})` : ""}.` : "");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "presentation": {
+      push(title + descPart + ".");
+      push([C, esc(e.location)].filter(Boolean).join(", ") + ".");
+      break;
+    }
+    case "report": {
+      let s = title;
+      if(e.number) s += ` (Report No. ${esc(e.number)})`;
+      push(s + descPart + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "standard": {
+      let s = title;
+      if(e.number) s += ` (Standard No. ${esc(e.number)})`;
+      push(s + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "law": {
+      let s = title;
+      if(e.number) s += ` (${esc(e.number)})`;
+      push(s + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "preprint": {
+      push(title + descPart + ".");
+      push((C || P) ? (C || P) + "." : "");
+      break;
+    }
+    case "thesis": {
+      const inner = [descriptor || "Thesis", P].filter(Boolean).join(", ");
+      push(`${title} [${esc(inner)}].`);
+      push(C ? C + "." : "");
+      break;
+    }
+    case "dataset":
+    case "software": {
+      let s = title;
+      if(e.edition) s += ` (Version ${esc(e.edition)})`;
+      push(s + descPart + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "statistics": {
+      push(title + descPart + ".");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "podcast": {
+      let s = title;
+      if(e.number) s += ` (No. ${esc(e.number)})`;
+      push(s + descPart + ".");
+      push(C ? `In <em>${C}</em>.` : "");
+      push(P ? P + "." : "");
+      break;
+    }
+    case "video":
+    case "social": {
+      push(title + descPart + ".");
+      push(C ? C + "." : "");
+      break;
+    }
+    case "blog":
+    case "news_web": {
+      push(title + descPart + ".");
+      push(C ? `<em>${C}</em>.` : "");
+      break;
+    }
+    case "webpage": {
+      push(title + descPart + ".");
+      const site = (A && stripTags(e.container) === stripTags(joinAuthors(e.authors))) ? "" : C;
+      push(site ? site + "." : "");
+      break;
+    }
+    default: {
+      let s = title;
+      if(e.edition) s += ` (${esc(e.edition)} ed.)`;
+      push(s + descPart + ".");
+      if(C){
+        let c = `<em>${C}${e.volume ? ", " + esc(e.volume) : ""}</em>`;
+        if(e.issue) c += `(${esc(e.issue)})`;
+        if(pages) c += `, ${pages}`;
+        push(c + ".");
+      }
+      push(P ? P + "." : "");
+    }
+  }
+  push(link);
+  if(optJpNote) push("(in Japanese)");
+
+  return parts.join(" ")
+    .replace(/\s+/g, " ")
+    .replace(/\s+\./g, ".")
+    .replace(/\.\.(?!\.)/g, ".")
+    .trim();
+}
+
+/* タグを外すだけでなく、esc() が入れた実体参照を戻す（& が &amp; のままコピーされるのを防ぐ） */
+const toPlain = html => String(html)
+  .replace(/<[^>]+>/g, "")
+  .replace(/&lt;/g, "<")
+  .replace(/&gt;/g, ">")
+  .replace(/&quot;/g, '"')
+  .replace(/&#0?39;/g, "'")
+  .replace(/&amp;/g, "&");
+/* innerHTML に入れる直前の最終防衛線: <em> と </em> 以外のタグを削除する */
+const sanitize = html => String(html).replace(/<(?!\/?em>)[^>]*>/gi, "");
+
+function inText(e){
+  const year = (e.year.trim().split(",")[0] || "n.d.").trim();
+  const names = e.authors.map(a => a.family).filter(Boolean);
+  let key;
+  if(!names.length){
+    key = stripTags(e.container) || stripTags(e.title).split(/\s+/).slice(0, 4).join(" ") || "Anonymous";
+    if(!stripTags(e.container)) key = `"${key}"`;
+  }
+  else if(names.length === 1) key = names[0];
+  else if(names.length === 2) key = `${names[0]} & ${names[1]}`;
+  else key = `${names[0]} et al.`;
+  return {paren:`(${key}, ${year})`, narrative:`${key.replace(" & ", " and ")} (${year})`};
+}
+
+/* ============ フォーム ============ */
+function applyTypeUI(){
+  const t = TYPES[$("f-type").value] || TYPES.other;
+  ALL_FIELDS.forEach(f => {
+    const w = $("w-" + f);
+    const on = t.show.includes(f);
+    w.hidden = !on;
+    if(on){
+      const lab = w.querySelector("label");
+      lab.textContent = (t.labels && t.labels[f]) || BASE_LABELS[f];
+    }
+  });
+  $("w-retrieved").hidden = !["webpage", "statistics", "news_web", "other"].includes($("f-type").value);
+}
+
+const FORM_FIELDS = ["type","year","authors","title","translated","container","volume","issue",
+  "pages","number","edition","publisher","editors","location","descriptor","retrieved","doi"];
+
+function fillForm(){
+  $("f-type").value = TYPES[entry.type] ? entry.type : "other";
+  $("f-year").value = entry.year;
+  $("f-authors").value = peopleToText(entry.authors);
+  $("f-title").value = stripTags(entry.title);
+  $("f-translated").value = entry.translated;
+  $("f-container").value = entry.container;
+  $("f-volume").value = entry.volume;
+  $("f-issue").value = entry.issue;
+  $("f-pages").value = entry.pages;
+  $("f-number").value = entry.number;
+  $("f-edition").value = entry.edition;
+  $("f-publisher").value = entry.publisher;
+  $("f-editors").value = peopleToText(entry.editors);
+  $("f-location").value = entry.location;
+  $("f-descriptor").value = entry.descriptor;
+  $("f-retrieved").value = entry.retrieved;
+  $("f-doi").value = entry.doi;
+  $("jp-note").checked = !!entry.jpNote;
+  applyTypeUI();
+  render();
+}
+
+function readForm(){
+  entry.type = $("f-type").value;
+  entry.year = $("f-year").value;
+  entry.authors = parsePeople($("f-authors").value);
+  entry.title = $("f-title").value;
+  entry.translated = $("f-translated").value;
+  entry.container = $("f-container").value;
+  entry.volume = $("f-volume").value;
+  entry.issue = $("f-issue").value;
+  entry.pages = $("f-pages").value;
+  entry.number = $("f-number").value;
+  entry.edition = $("f-edition").value;
+  entry.publisher = $("f-publisher").value;
+  entry.editors = parsePeople($("f-editors").value);
+  entry.location = $("f-location").value;
+  entry.descriptor = $("f-descriptor").value;
+  entry.retrieved = $("f-retrieved").value;
+  entry.doi = $("f-doi").value;
+  render();
+}
+
+FORM_FIELDS.forEach(f => {
+  const el = $("f-" + f);
+  el.addEventListener("input", readForm);
+  el.addEventListener("change", () => { if(f === "type") applyTypeUI(); readForm(); });
+});
+$("sentence").addEventListener("change", render);
+$("jp-note").addEventListener("change", render);
+/* DOI/URL の有無は出力全体に効く設定なので、保存済みリストも描き直す */
+$("no-doi").addEventListener("change", () => { render(); drawList(); });
+
+function render(){
+  const html = buildHTML(entry);
+  if(html.trim()) $("out").innerHTML = sanitize(html);
+  else $("out").textContent = "まだ何も選ばれていません。";
+  const it = inText(entry);
+  $("intext-p").textContent = it.paren;
+  $("intext-n").textContent = it.narrative;
+}
+
+/* ============ 取得 ============ */
+function status(msg, isErr){
+  const el = $("status");
+  el.hidden = !msg;
+  el.textContent = msg || "";
+  el.className = "status" + (isErr ? " err" : "");
+}
+
+const PROXY = u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
+
+/* polite pool 用の連絡先。保存できない環境（サンドボックス等）ではセッション内のみ保持 */
+const MAIL_KEY = "apa-builder-mailto";
+let mailto = "";
+const validMail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+const polite = () => validMail(mailto) ? "&mailto=" + encodeURIComponent(mailto) : "";
+
+function loadMail(){
+  try{ mailto = localStorage.getItem(MAIL_KEY) || ""; }catch(e){ mailto = ""; }
+  $("mailto").value = mailto;
+  showMailState();
+}
+function showMailState(){
+  const el = $("mailto-state");
+  if(!mailto) el.textContent = "未設定：匿名プールで検索します。";
+  else if(!validMail(mailto)) el.textContent = "メールアドレスの形式が不正です。匿名プールで検索します。";
+  else el.textContent = "polite pool を使用中。";
+}
+$("mailto").addEventListener("input", e => {
+  mailto = e.target.value.trim();
+  try{ localStorage.setItem(MAIL_KEY, mailto); }catch(err){}
+  showMailState();
+});
+
+const MAX_BYTES = 3e6;
+const TIMEOUT_MS = 12000;
+
+/* 送信を最小化した fetch: Cookie を送らない・Referer を送らない・キャッシュしない・
+   12秒でタイムアウト・応答サイズ上限あり。中継サーバーは明示的に許可した場合のみ。 */
+async function getText(url, useProxy){
+  if(useProxy && !$("use-proxy").checked) throw new Error("proxy-off");
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  try{
+    const r = await fetch(useProxy ? PROXY(url) : url, {
+      method: "GET",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+      headers: {"Accept": "application/json, text/xml, text/html"},
+      signal: ctl.signal
+    });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const txt = await r.text();
+    if(txt.length > MAX_BYTES) throw new Error("応答が大きすぎます");
+    return txt;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+/* 取得先の検証: http/https 以外と、ローカル・内部ネットワーク宛は拒否 */
+function safeURL(raw){
+  let u;
+  try{ u = new URL(raw.trim()); }catch(e){ throw new Error("URLの形式が不正です"); }
+  if(u.protocol !== "http:" && u.protocol !== "https:") throw new Error("http / https 以外は取得しません");
+  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if(h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "::1" ||
+     /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h) ||
+     /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+     /^(fc|fd|fe80)/.test(h))
+    throw new Error("ローカル・内部ネットワークのアドレスは取得しません");
+  return u.href;
+}
+async function getJSON(url, allowProxy){
+  try{ return JSON.parse(await getText(url, false)); }
+  catch(e){
+    if(!allowProxy) throw e;
+    return JSON.parse(await getText(url, true));
+  }
+}
+async function getXML(url, allowProxy){
+  let txt;
+  try{ txt = await getText(url, false); }
+  catch(e){
+    if(!allowProxy) throw e;
+    txt = await getText(url, true);
+  }
+  return new DOMParser().parseFromString(txt, "text/xml");
+}
+
+const splitName = n => {
+  const t = (n || "").trim();
+  if(!t) return null;
+  if(isCJK(t)) return {family:t.replace(/\s+/g, " "), given:""};
+  if(t.includes(",")){
+    const [f, ...r] = t.split(",");
+    return {family:f.trim(), given:r.join(",").trim()};
+  }
+  const p = t.split(/\s+/);
+  if(p.length === 1) return {family:t, given:""};
+  return {family:p.pop(), given:p.join(" ")};
+};
+
+/* --- Crossref --- */
+const CR_TYPE = {"journal-article":"journal","book":"book","monograph":"book","edited-book":"editedbook",
+  "book-chapter":"chapter","book-section":"chapter","book-part":"chapter","reference-entry":"encyclopedia",
+  "proceedings-article":"conference","posted-content":"preprint","report":"report",
+  "report-component":"report","dissertation":"thesis","dataset":"dataset","standard":"standard"};
+
+function fromCrossref(it){
+  const e = blank(); e.source = "Crossref";
+  e.type = CR_TYPE[it.type] || "journal";
+  const dp = ((it.issued || {})["date-parts"] || [[]])[0] || [];
+  e.year = dp[0] ? String(dp[0]) : "";
+  e.authors = (it.author || []).map(a => a.family ? {family:a.family, given:a.given || ""} : splitName(a.name)).filter(Boolean);
+  e.editors = (it.editor || []).map(a => ({family:a.family || "", given:a.given || ""}));
+  let t = (it.title || [])[0] || "";
+  if((it.subtitle || [])[0]) t += ": " + it.subtitle[0];
+  e.title = stripTags(t);
+  e.container = stripTags((it["container-title"] || [])[0] || (it.event && it.event.name) || "");
+  e.volume = it.volume || ""; e.issue = it.issue || ""; e.pages = it.page || "";
+  e.number = it["article-number"] || "";
+  e.publisher = it.publisher || "";
+  e.doi = it.DOI ? "https://doi.org/" + it.DOI : (it.URL || "");
+  if(e.type === "preprint" && !e.container) e.container = it["group-title"] || e.publisher;
+  if(["book", "editedbook", "report"].includes(e.type)) e.container = "";
+  return e;
+}
+
+/* --- OpenAlex --- */
+const OA_TYPE = {"article":"journal","book":"book","book-chapter":"chapter","dissertation":"thesis",
+  "preprint":"preprint","report":"report","dataset":"dataset","standard":"standard","paratext":"other"};
+function fromOpenAlex(w){
+  const e = blank(); e.source = "OpenAlex";
+  e.type = OA_TYPE[w.type] || "journal";
+  e.title = stripTags(w.display_name || w.title || "");
+  e.year = w.publication_year ? String(w.publication_year) : "";
+  e.authors = (w.authorships || []).map(a => splitName(a.author && a.author.display_name)).filter(Boolean);
+  const src = (w.primary_location && w.primary_location.source) || {};
+  e.container = src.display_name || "";
+  e.publisher = src.host_organization_name || "";
+  const b = w.biblio || {};
+  e.volume = b.volume || ""; e.issue = b.issue || "";
+  if(b.first_page) e.pages = b.first_page + (b.last_page ? "-" + b.last_page : "");
+  e.doi = w.doi || (w.primary_location && w.primary_location.landing_page_url) || "";
+  return e;
+}
+
+/* --- Semantic Scholar --- */
+function fromS2(p){
+  const e = blank(); e.source = "S2";
+  e.type = "journal";
+  e.title = stripTags(p.title || "");
+  e.year = p.year ? String(p.year) : "";
+  e.authors = (p.authors || []).map(a => splitName(a.name)).filter(Boolean);
+  e.container = p.venue || "";
+  if(p.journal){ e.volume = p.journal.volume || ""; e.pages = p.journal.pages || ""; }
+  const ex = p.externalIds || {};
+  e.doi = ex.DOI ? "https://doi.org/" + ex.DOI : (ex.ArXiv ? "https://arxiv.org/abs/" + ex.ArXiv : "");
+  if(ex.ArXiv && !ex.DOI){ e.type = "preprint"; e.container = "arXiv"; }
+  return e;
+}
+
+/* --- DataCite --- */
+const DC_TYPE = {Dataset:"dataset", Text:"report", Software:"software", Report:"report",
+  Dissertation:"thesis", Preprint:"preprint", ConferencePaper:"conference", Book:"book",
+  BookChapter:"chapter", JournalArticle:"journal", Image:"other", Audiovisual:"video"};
+function fromDataCite(d){
+  const a = d.attributes || {};
+  const e = blank(); e.source = "DataCite";
+  e.type = DC_TYPE[(a.types || {}).resourceTypeGeneral] || "dataset";
+  e.title = stripTags(((a.titles || [])[0] || {}).title || "");
+  e.year = a.publicationYear ? String(a.publicationYear) : "";
+  e.authors = (a.creators || []).map(c =>
+    c.familyName ? {family:c.familyName, given:c.givenName || ""} : splitName(c.name)).filter(Boolean);
+  e.publisher = typeof a.publisher === "string" ? a.publisher : ((a.publisher || {}).name || "");
+  e.edition = a.version || "";
+  e.doi = a.doi ? "https://doi.org/" + a.doi : (a.url || "");
+  return e;
+}
+
+/* --- Google Books / Open Library --- */
+function fromGoogleBooks(v){
+  const vi = v.volumeInfo || {};
+  const e = blank(); e.source = "Google Books"; e.type = "book";
+  e.title = vi.title + (vi.subtitle ? ": " + vi.subtitle : "");
+  e.authors = (vi.authors || []).map(splitName).filter(Boolean);
+  e.year = (vi.publishedDate || "").slice(0, 4);
+  e.publisher = vi.publisher || "";
+  e.doi = vi.infoLink || "";
+  return e;
+}
+function fromOpenLibrary(d){
+  const e = blank(); e.source = "Open Library"; e.type = "book";
+  e.title = d.title || "";
+  e.authors = (d.author_name || []).map(splitName).filter(Boolean);
+  e.year = d.first_publish_year ? String(d.first_publish_year) : "";
+  e.publisher = (d.publisher || [])[0] || "";
+  e.doi = d.key ? "https://openlibrary.org" + d.key : "";
+  return e;
+}
+
+/* --- CiNii Research --- */
+const cv = v => {
+  if(v == null) return "";
+  if(Array.isArray(v)) return cv(v[0]);
+  if(typeof v === "object") return String(v["@value"] || v["@id"] || "");
+  return String(v);
+};
+function fromCiNii(it){
+  const e = blank(); e.source = "CiNii"; e.type = "journal";
+  e.title = stripTags(cv(it["dc:title"] || it.title));
+  const creators = it["dc:creator"];
+  const arr = Array.isArray(creators) ? creators : (creators ? [creators] : []);
+  e.authors = arr.map(c => splitName(cv(c))).filter(Boolean);
+  e.container = cv(it["prism:publicationName"]);
+  e.volume = cv(it["prism:volume"]);
+  e.issue = cv(it["prism:number"]);
+  const sp = cv(it["prism:startingPage"]), ep = cv(it["prism:endingPage"]);
+  if(sp) e.pages = sp + (ep ? "-" + ep : "");
+  const date = cv(it["prism:publicationDate"]) || cv(it["dc:date"]);
+  e.year = (date.match(/\d{4}/) || [""])[0];
+  e.publisher = cv(it["dc:publisher"]);
+  e.doi = cv(it["prism:doi"]) ? "https://doi.org/" + cv(it["prism:doi"]) : cv(it["@id"]) || cv(it.link);
+  if(!e.container) e.type = "book";
+  return e;
+}
+
+/* --- 国立国会図書館サーチ --- */
+function fromNDL(item){
+  const g = tag => {
+    const el = item.getElementsByTagName(tag)[0];
+    return el ? (el.textContent || "").trim() : "";
+  };
+  const e = blank(); e.source = "NDL"; e.type = "book";
+  e.title = g("title");
+  const auth = g("author") || g("dc:creator");
+  e.authors = auth ? auth.split(/[,、;／\/]/).map(s => splitName(s.replace(/\s*著$|\s*編$/, ""))).filter(Boolean) : [];
+  e.publisher = g("dc:publisher");
+  const date = g("dcterms:issued") || g("pubDate");
+  e.year = (date.match(/\d{4}/) || [""])[0];
+  e.doi = g("link") || g("guid");
+  return e;
+}
+
+/* --- ID 判定 --- */
+function extractDOI(s){
+  const m = decodeURIComponent(s).match(/10\.\d{4,9}\/[-._;()/:A-Z0-9<>\[\]]+/i);
+  return m ? m[0].replace(/[.,;)\]]+$/, "") : null;
+}
+
+async function lookupDOI(doi){
+  const p = doi.split("/").map(encodeURIComponent).join("/");
+  const q = polite() ? "?" + polite().slice(1) : "";
+  try{
+    const d = await getJSON("https://api.crossref.org/works/" + p + q, true);
+    return fromCrossref(d.message);
+  }catch(e){
+    const d = await getJSON("https://api.datacite.org/dois/" + p, true);
+    return fromDataCite(d.data);
+  }
+}
+
+async function lookupPMID(pmid){
+  const d = await getJSON(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${pmid}`, true);
+  const r = d.result[pmid];
+  const e = blank(); e.source = "PubMed"; e.type = "journal";
+  e.title = stripTags(r.title || "").replace(/\.$/, "");
+  e.authors = (r.authors || []).filter(a => a.authtype === "Author").map(a => splitName(a.name)).filter(Boolean);
+  e.container = r.fulljournalname || r.source || "";
+  e.volume = r.volume || ""; e.issue = r.issue || ""; e.pages = r.pages || "";
+  e.year = (r.pubdate || "").slice(0, 4);
+  const doi = (r.articleids || []).find(x => x.idtype === "doi");
+  e.doi = doi ? "https://doi.org/" + doi.value : "";
+  return e;
+}
+
+async function fetchWebpage(rawUrl){
+  const url = safeURL(rawUrl);
+  /* DOMParser("text/html") はスクリプトを実行せず、外部リソースも読み込まない */
+  const doc = new DOMParser().parseFromString(await getText(url, true), "text/html");
+  const meta = n => {
+    const el = doc.querySelector(`meta[property="${n}"]`) || doc.querySelector(`meta[name="${n}"]`);
+    return el ? el.getAttribute("content") : "";
+  };
+  const host = new URL(url).hostname.replace(/^www\./, "");
+  const e = blank(); e.source = "Web";
+  e.type = /youtube\.com|youtu\.be|vimeo\.com|nicovideo/.test(host) ? "video"
+    : /twitter\.com|x\.com|facebook\.com|instagram\.com|threads\.net/.test(host) ? "social"
+    : /news|shimbun|asahi|yomiuri|mainichi|nikkei|sankei|nhk|kyodo|jiji/.test(host) ? "news_web"
+    : /blog|note\.com|hatena|medium\.com/.test(host) ? "blog" : "webpage";
+  e.title = stripTags(meta("og:title") || (doc.querySelector("title") ? doc.querySelector("title").textContent : ""));
+  e.container = meta("og:site_name") || host;
+  const author = meta("author") || meta("article:author") || meta("citation_author");
+  if(author && !/^https?:/.test(author)) e.authors = parsePeople(author);
+  const pub = meta("article:published_time") || meta("citation_publication_date") || meta("date") || meta("pubdate");
+  if(pub){
+    const d = new Date(pub);
+    if(!isNaN(d)) e.year = `${d.getFullYear()}, ${d.toLocaleString("en-US", {month:"long"})} ${d.getDate()}`;
+  }
+  const cDoi = meta("citation_doi");
+  e.doi = cDoi ? "https://doi.org/" + cDoi : url;
+  return e;
+}
+
+/* --- 統合検索 --- */
+function dedupe(items){
+  const seen = new Map();
+  items.forEach(e => {
+    if(!e || !e.title) return;
+    const doi = (linkOf(e).match(/10\.\d{4,9}\/\S+/) || [""])[0].toLowerCase();
+    const key = doi || (stripTags(e.title).toLowerCase().replace(/[^a-z0-9\u3040-\u9fff]/g, "").slice(0, 60) + "|" + e.year);
+    const prev = seen.get(key);
+    if(!prev) seen.set(key, e);
+    else{
+      const score = x => (linkOf(x) ? 2 : 0) + (x.container ? 1 : 0) + (x.authors.length ? 1 : 0) + (x.pages ? 1 : 0);
+      if(score(e) > score(prev)) seen.set(key, e);
+    }
+  });
+  return [...seen.values()];
+}
+
+async function multiSearch(q){
+  const jp = $("jp-src").checked && (isCJK(q) || /[ぁ-ん]/.test(q));
+  const jobs = [
+    getJSON("https://api.crossref.org/works?rows=6&select=DOI,title,subtitle,author,editor,issued,container-title,volume,issue,page,article-number,publisher,type,URL,event,group-title&query.bibliographic=" + encodeURIComponent(q) + polite(), true)
+      .then(d => (d.message.items || []).map(fromCrossref)),
+    getJSON("https://api.openalex.org/works?per-page=5&search=" + encodeURIComponent(q) + polite(), true)
+      .then(d => (d.results || []).map(fromOpenAlex)),
+    getJSON("https://api.semanticscholar.org/graph/v1/paper/search?limit=5&fields=title,year,authors,venue,journal,externalIds&query=" + encodeURIComponent(q), false)
+      .then(d => (d.data || []).map(fromS2)),
+    getJSON("https://api.datacite.org/dois?page[size]=4&query=" + encodeURIComponent(q), true)
+      .then(d => (d.data || []).map(fromDataCite)),
+    getJSON("https://www.googleapis.com/books/v1/volumes?maxResults=4&q=" + encodeURIComponent(q), true)
+      .then(d => (d.items || []).map(fromGoogleBooks)),
+    getJSON("https://openlibrary.org/search.json?limit=4&fields=title,author_name,first_publish_year,publisher,key&q=" + encodeURIComponent(q), true)
+      .then(d => (d.docs || []).map(fromOpenLibrary))
+  ];
+  if(jp){
+    jobs.push(
+      getJSON("https://cir.nii.ac.jp/opensearch/all?format=json&count=6&q=" + encodeURIComponent(q), true)
+        .then(d => {
+          const g = (d["@graph"] || [])[0] || {};
+          return (g.items || []).map(fromCiNii);
+        }),
+      getXML("https://ndlsearch.ndl.go.jp/api/opensearch?cnt=5&any=" + encodeURIComponent(q), true)
+        .then(doc => [...doc.getElementsByTagName("item")].map(fromNDL))
+    );
+  }
+  const res = await Promise.allSettled(jobs);
+  const ok = res.filter(r => r.status === "fulfilled").flatMap(r => r.value || []);
+  const failed = res.filter(r => r.status === "rejected").length;
+  return {items: dedupe(ok), failed, total: jobs.length};
+}
+
+function showResults(items){
+  candidates = items;
+  const ul = $("results");
+  ul.innerHTML = "";
+  items.forEach((e, i) => {
+    const li = document.createElement("li");
+    li.tabIndex = 0;
+    const names = e.authors.map(a => a.family).slice(0, 3).join(", ") + (e.authors.length > 3 ? " ほか" : "");
+    const t = document.createElement("div");
+    t.className = "r-title";
+    t.textContent = stripTags(e.title) || "(タイトルなし)";
+    const m = document.createElement("div");
+    m.className = "r-meta";
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = (TYPES[e.type] || {}).ja || e.type;
+    m.appendChild(tag);
+    m.appendChild(document.createTextNode(
+      [names.trim(), e.year, stripTags(e.container), e.source].filter(Boolean).join(" · ")));
+    li.appendChild(t);
+    li.appendChild(m);
+    const pick = () => {
+      entry = Object.assign(blank(), items[i]);
+      fillForm();
+      $("out").scrollIntoView({block:"center", behavior:"smooth"});
+    };
+    li.addEventListener("click", pick);
+    li.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); pick(); }});
+    ul.appendChild(li);
+  });
+}
+
+async function search(){
+  const q = $("q").value.trim();
+  if(!q) return;
+  $("results").innerHTML = "";
+  status("検索中…");
+  $("go").disabled = true;
+  try{
+    const doi = extractDOI(q);
+    const arxiv = q.match(/arxiv\.org\/(?:abs|pdf)\/([0-9]{4}\.[0-9]{4,5})/i) || q.match(/^arxiv:\s*([0-9]{4}\.[0-9]{4,5})/i);
+    const isbn = q.replace(/[-\s]/g, "").match(/^(?:97[89])?\d{9}[\dXx]$/);
+    const pmid = q.match(/^(?:pmid:?\s*)?(\d{7,8})$/i);
+
+    if(doi || arxiv){
+      const e = await lookupDOI(doi || "10.48550/arXiv." + arxiv[1]);
+      showResults([e]); entry = e; fillForm(); status("");
+    }else if(pmid){
+      const e = await lookupPMID(pmid[1]);
+      showResults([e]); entry = e; fillForm(); status("");
+    }else if(isbn){
+      const n = q.replace(/[-\s]/g, "");
+      const [g, o] = await Promise.allSettled([
+        getJSON("https://www.googleapis.com/books/v1/volumes?q=isbn:" + n, true),
+        getJSON("https://openlibrary.org/search.json?limit=3&fields=title,author_name,first_publish_year,publisher,key&q=" + n, true)
+      ]);
+      let items = [];
+      if(g.status === "fulfilled") items = items.concat((g.value.items || []).map(fromGoogleBooks));
+      if(o.status === "fulfilled") items = items.concat((o.value.docs || []).map(fromOpenLibrary));
+      items = dedupe(items);
+      if(!items.length) throw new Error("該当なし");
+      showResults(items); entry = Object.assign(blank(), items[0]); fillForm(); status("");
+    }else if(/^https?:\/\//i.test(q)){
+      status("ページを読み込み中…");
+      const e = await fetchWebpage(q);
+      showResults([e]); entry = e; fillForm();
+      status("Webページとして取得しました。著者・日付・種類は確認してください。");
+    }else{
+      const {items, failed, total} = await multiSearch(q);
+      if(!items.length) throw new Error("該当なし");
+      showResults(items);
+      status(`${items.length}件（${total - failed}/${total}のデータベースが応答）。該当するものを選んでください。`);
+    }
+  }catch(err){
+    const msg = err.message || "";
+    if(msg === "proxy-off" || err.name === "AbortError"){
+      status(err.name === "AbortError"
+        ? "時間内に応答がありませんでした。もう一度試すか、下のフォームに直接入力してください。"
+        : "この取得先はCORSを許可していないため、中継サーバーが必要です。上の「中継サーバーの使用を許可する」をオンにするか、下のフォームに直接入力してください。", true);
+      return;
+    }
+    const blocked = /Load failed|Failed to fetch|NetworkError|CORS/i.test(msg);
+    status(blocked
+      ? "外部への通信がブロックされています。このファイルをダウンロードして開くか、GitHub Pages 等に置いて実行してください（Claudeのプレビュー内では外部APIを呼べません）。下のフォームへの直接入力は使えます。"
+      : "取得できませんでした（" + msg + "）。下のフォームに直接入力すれば整形できます。", true);
+  }finally{
+    $("go").disabled = false;
+  }
+}
+$("go").addEventListener("click", search);
+$("q").addEventListener("keydown", e => { if(e.key === "Enter") search(); });
+
+/* ============ コピー・リスト ============ */
+async function copy(html, text){
+  try{
+    if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([html], {type:"text/html"}),
+        "text/plain": new Blob([text], {type:"text/plain"})
+      })]);
+      return true;
+    }
+    await navigator.clipboard.writeText(text);
+    return true;
+  }catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove();
+    return ok;
+  }
+}
+function flash(btn, msg){
+  const old = btn.textContent;
+  btn.textContent = msg;
+  setTimeout(() => { btn.textContent = old; }, 1400);
+}
+const wrapFont = html => `<span style="font-family:'Times New Roman',serif">${html}</span>`;
+
+$("copy").addEventListener("click", async e => {
+  const html = buildHTML(entry);
+  if(!toPlain(html).trim()) return;
+  await copy(wrapFont(html), toPlain(html));
+  flash(e.target, "コピーしました");
+});
+$("copy-in").addEventListener("click", async e => {
+  const it = inText(entry);
+  await copy(wrapFont(it.paren), it.paren);
+  flash(e.target, "コピーしました");
+});
+$("add").addEventListener("click", e => {
+  if(!toPlain(buildHTML(entry)).trim()) return;
+  const first = entry.authors[0];
+  const key = (first ? first.family : (stripTags(entry.container) || stripTags(entry.title))).toLowerCase();
+  saved.push({
+    entry: JSON.parse(JSON.stringify(entry)),
+    sentence: $("sentence").checked,
+    jpNote: $("jp-note").checked,
+    key
+  });
+  drawList();
+  flash(e.target, "追加しました");
+});
+
+/* 追加時の設定（sentence case / in Japanese）は項目ごとに固定。
+   DOI・URLの有無だけは現在の設定を反映して描き直す */
+const renderSaved = item => buildHTML(item.entry, {
+  sentence: item.sentence, jpNote: item.jpNote, noDoi: $("no-doi").checked
+});
+$("reset").addEventListener("click", () => { entry = blank(); fillForm(); });
+
+const sortedSaved = () => saved.slice().sort((a, b) => a.key.localeCompare(b.key, "en"));
+
+function drawList(){
+  const ul = $("list");
+  ul.innerHTML = "";
+  $("count").textContent = saved.length + "件";
+  if(!saved.length){
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "まだ何もありません。";
+    ul.appendChild(li);
+    return;
+  }
+  sortedSaved().forEach(item => {
+    const li = document.createElement("li");
+    li.innerHTML = sanitize(renderSaved(item));
+    const btn = document.createElement("button");
+    btn.className = "ghost small del";
+    btn.textContent = "削除";
+    btn.addEventListener("click", () => { saved.splice(saved.indexOf(item), 1); drawList(); });
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+}
+$("copy-all").addEventListener("click", async e => {
+  if(!saved.length) return;
+  const html = wrapFont(sortedSaved().map(s => `<p style="text-indent:-2em;padding-left:2em;margin:0 0 .6em">${sanitize(renderSaved(s))}</p>`).join(""));
+  const text = sortedSaved().map(s => toPlain(renderSaved(s))).join("\n\n");
+  await copy(html, text);
+  flash(e.target, "コピーしました");
+});
+$("download").addEventListener("click", () => {
+  if(!saved.length) return;
+  const text = "References\n\n" + sortedSaved().map(s => toPlain(renderSaved(s))).join("\n\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/plain;charset=utf-8"}));
+  a.download = "references.txt";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$("clear").addEventListener("click", () => {
+  if(saved.length && confirm("リストを空にしますか？")){ saved = []; drawList(); }
+});
+
+applyTypeUI();
+loadMail();
+drawList();
+render();
+</script>
+</body>
+</html>

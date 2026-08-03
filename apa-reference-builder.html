@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/kB8PsT2bMf8KBr6sNuwOEn0IYfEPr0ecKoaa+F23dc='; style-src 'sha256-5qhBOXxj+8A0V5S1K7Pf5YjTyfa0Ui+eZSrd1pfh8go='; connect-src https://api.crossref.org https://api.openalex.org https://api.semanticscholar.org https://api.datacite.org https://www.googleapis.com https://openlibrary.org https://cir.nii.ac.jp https://ndlsearch.ndl.go.jp https://eutils.ncbi.nlm.nih.gov https://api.allorigins.win; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <title>APA参考文献ビルダー</title>
 <style>
 :root{
@@ -40,6 +42,12 @@ button.ghost:hover{background:#EEF1F5}
 button.small{padding:5px 10px;font-size:12px}
 button:disabled{opacity:.45;cursor:default}
 .hint{font-size:12px;color:var(--ink-soft);margin:8px 0 0}
+.qbox{flex:1 1 260px;width:auto}
+.panel-sub{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
+.short{min-height:44px}
+.row.tight{margin-top:0}
+.privacy{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0}
+.privacy b{color:var(--ink);font-weight:600}
 .results{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
 .results li{border-top:1px solid var(--rule);padding:10px 14px;cursor:pointer}
 .results li:first-child{border-top:none}
@@ -65,6 +73,7 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
 .status.err{color:var(--warn)}
 .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin:0}
 .toggle input{width:auto}
+.proxy-row{margin:10px 0 8px}
 .opts{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
 .count{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
 @media(max-width:700px){
@@ -90,10 +99,17 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
   </div>
   <div class="sec-body">
     <div class="searchbar">
-      <input id="q" placeholder="タイトル / DOI / ISBN / URL / PMID" style="flex:1 1 260px;width:auto">
+      <input id="q" placeholder="タイトル / DOI / ISBN / URL / PMID" class="qbox">
       <button id="go">検索</button>
     </div>
     <p class="hint">Crossref・OpenAlex・Semantic Scholar・DataCite・Google Books・Open Library・CiNii Research・国立国会図書館サーチ。DOI/ISBN/PMID/arXivは直接照会、Webページは本文からメタデータを抽出します。</p>
+    <div class="panel-sub">
+      <label for="mailto">連絡先メールアドレス（任意）— Crossref と OpenAlex の優先処理枠（polite pool）に入り、混雑時も速くなる。この端末にのみ保存され、送信先は両APIだけ。</label>
+      <input id="mailto" type="email" placeholder="you@example.ac.jp" autocomplete="email">
+      <p class="hint" id="mailto-state"></p>
+      <label class="toggle proxy-row"><input type="checkbox" id="use-proxy">中継サーバー（allorigins）の使用を許可する</label>
+      <p class="privacy">外部に出るのは<b>検索のときだけ</b>です。整形・編集・リスト・コピー・保存はすべてこの端末の中で完結し、入力内容やリストはどこにも送信・保存されません（保存されるのは上のメールアドレスのみ、この端末のブラウザ内）。中継サーバーを許可すると、CORSを許可していない先（CiNii・国会図書館・一般Webページ）も取得できますが、<b>その取得先URLが第三者のサーバーを経由します</b>。既定はオフです。</p>
+    </div>
   </div>
   <div id="status" class="status" hidden></div>
   <ul id="results" class="results"></ul>
@@ -144,7 +160,7 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
       <div id="w-edition"><label for="f-edition">版 / バージョン</label><input id="f-edition"></div>
       <div id="w-publisher"><label for="f-publisher">出版社 / 発行機関</label><input id="f-publisher"></div>
       <div id="w-location"><label for="f-location">開催地</label><input id="f-location"></div>
-      <div class="full" id="w-editors"><label for="f-editors">編者（1人1行）</label><textarea id="f-editors" style="min-height:44px"></textarea></div>
+      <div class="full" id="w-editors"><label for="f-editors">編者（1人1行）</label><textarea id="f-editors" class="short"></textarea></div>
       <div class="full" id="w-descriptor"><label for="f-descriptor">角括弧の注記（自動。上書き可）</label><input id="f-descriptor" placeholder="Data set / Map / Press release など"></div>
       <div class="full" id="w-retrieved"><label for="f-retrieved">閲覧日（内容が変わるページのみ。例: August 3, 2026）</label><input id="f-retrieved"></div>
     </div>
@@ -172,7 +188,7 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
   </div>
   <ul id="list" class="list"></ul>
   <div class="sec-body">
-    <div class="row" style="margin-top:0">
+    <div class="row tight">
       <button id="copy-all" class="ghost">全部コピー（アルファベット順）</button>
       <button id="download" class="ghost">.txt で保存</button>
       <button id="clear" class="ghost">リストを空にする</button>
@@ -577,6 +593,8 @@ function buildHTML(e){
 }
 
 const toPlain = html => html.replace(/<[^>]+>/g, "");
+/* innerHTML に入れる直前の最終防衛線: <em> と </em> 以外のタグを削除する */
+const sanitize = html => String(html).replace(/<(?!\/?em>)[^>]*>/gi, "");
 
 function inText(e){
   const year = (e.year.trim().split(",")[0] || "n.d.").trim();
@@ -664,7 +682,8 @@ $("jp-note").addEventListener("change", render);
 
 function render(){
   const html = buildHTML(entry);
-  $("out").innerHTML = html.trim() ? html : "まだ何も選ばれていません。";
+  if(html.trim()) $("out").innerHTML = sanitize(html);
+  else $("out").textContent = "まだ何も選ばれていません。";
   const it = inText(entry);
   $("intext-p").textContent = it.paren;
   $("intext-n").textContent = it.narrative;
@@ -680,10 +699,69 @@ function status(msg, isErr){
 
 const PROXY = u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u);
 
+/* polite pool 用の連絡先。保存できない環境（サンドボックス等）ではセッション内のみ保持 */
+const MAIL_KEY = "apa-builder-mailto";
+let mailto = "";
+const validMail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+const polite = () => validMail(mailto) ? "&mailto=" + encodeURIComponent(mailto) : "";
+
+function loadMail(){
+  try{ mailto = localStorage.getItem(MAIL_KEY) || ""; }catch(e){ mailto = ""; }
+  $("mailto").value = mailto;
+  showMailState();
+}
+function showMailState(){
+  const el = $("mailto-state");
+  if(!mailto) el.textContent = "未設定：匿名プールで検索します。";
+  else if(!validMail(mailto)) el.textContent = "メールアドレスの形式が不正です。匿名プールで検索します。";
+  else el.textContent = "polite pool を使用中。";
+}
+$("mailto").addEventListener("input", e => {
+  mailto = e.target.value.trim();
+  try{ localStorage.setItem(MAIL_KEY, mailto); }catch(err){}
+  showMailState();
+});
+
+const MAX_BYTES = 3e6;
+const TIMEOUT_MS = 12000;
+
+/* 送信を最小化した fetch: Cookie を送らない・Referer を送らない・キャッシュしない・
+   12秒でタイムアウト・応答サイズ上限あり。中継サーバーは明示的に許可した場合のみ。 */
 async function getText(url, useProxy){
-  const r = await fetch(useProxy ? PROXY(url) : url, {headers:{"Accept":"application/json, text/xml, */*"}});
-  if(!r.ok) throw new Error("HTTP " + r.status);
-  return r.text();
+  if(useProxy && !$("use-proxy").checked) throw new Error("proxy-off");
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  try{
+    const r = await fetch(useProxy ? PROXY(url) : url, {
+      method: "GET",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      referrerPolicy: "no-referrer",
+      headers: {"Accept": "application/json, text/xml, text/html"},
+      signal: ctl.signal
+    });
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    const txt = await r.text();
+    if(txt.length > MAX_BYTES) throw new Error("応答が大きすぎます");
+    return txt;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+/* 取得先の検証: http/https 以外と、ローカル・内部ネットワーク宛は拒否 */
+function safeURL(raw){
+  let u;
+  try{ u = new URL(raw.trim()); }catch(e){ throw new Error("URLの形式が不正です"); }
+  if(u.protocol !== "http:" && u.protocol !== "https:") throw new Error("http / https 以外は取得しません");
+  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if(h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "::1" ||
+     /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(h) ||
+     /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
+     /^(fc|fd|fe80)/.test(h))
+    throw new Error("ローカル・内部ネットワークのアドレスは取得しません");
+  return u.href;
 }
 async function getJSON(url, allowProxy){
   try{ return JSON.parse(await getText(url, false)); }
@@ -865,8 +943,9 @@ function extractDOI(s){
 
 async function lookupDOI(doi){
   const p = doi.split("/").map(encodeURIComponent).join("/");
+  const q = polite() ? "?" + polite().slice(1) : "";
   try{
-    const d = await getJSON("https://api.crossref.org/works/" + p, true);
+    const d = await getJSON("https://api.crossref.org/works/" + p + q, true);
     return fromCrossref(d.message);
   }catch(e){
     const d = await getJSON("https://api.datacite.org/dois/" + p, true);
@@ -888,7 +967,9 @@ async function lookupPMID(pmid){
   return e;
 }
 
-async function fetchWebpage(url){
+async function fetchWebpage(rawUrl){
+  const url = safeURL(rawUrl);
+  /* DOMParser("text/html") はスクリプトを実行せず、外部リソースも読み込まない */
   const doc = new DOMParser().parseFromString(await getText(url, true), "text/html");
   const meta = n => {
     const el = doc.querySelector(`meta[property="${n}"]`) || doc.querySelector(`meta[name="${n}"]`);
@@ -934,9 +1015,9 @@ function dedupe(items){
 async function multiSearch(q){
   const jp = $("jp-src").checked && (isCJK(q) || /[ぁ-ん]/.test(q));
   const jobs = [
-    getJSON("https://api.crossref.org/works?rows=6&select=DOI,title,subtitle,author,editor,issued,container-title,volume,issue,page,article-number,publisher,type,URL,event,group-title&query.bibliographic=" + encodeURIComponent(q), true)
+    getJSON("https://api.crossref.org/works?rows=6&select=DOI,title,subtitle,author,editor,issued,container-title,volume,issue,page,article-number,publisher,type,URL,event,group-title&query.bibliographic=" + encodeURIComponent(q) + polite(), true)
       .then(d => (d.message.items || []).map(fromCrossref)),
-    getJSON("https://api.openalex.org/works?per-page=5&search=" + encodeURIComponent(q), true)
+    getJSON("https://api.openalex.org/works?per-page=5&search=" + encodeURIComponent(q) + polite(), true)
       .then(d => (d.results || []).map(fromOpenAlex)),
     getJSON("https://api.semanticscholar.org/graph/v1/paper/search?limit=5&fields=title,year,authors,venue,journal,externalIds&query=" + encodeURIComponent(q), false)
       .then(d => (d.data || []).map(fromS2)),
@@ -972,8 +1053,19 @@ function showResults(items){
     const li = document.createElement("li");
     li.tabIndex = 0;
     const names = e.authors.map(a => a.family).slice(0, 3).join(", ") + (e.authors.length > 3 ? " ほか" : "");
-    li.innerHTML = `<div class="r-title">${esc(stripTags(e.title)) || "(タイトルなし)"}</div>
-      <div class="r-meta"><span class="tag">${esc((TYPES[e.type] || {}).ja || e.type)}</span>${esc(names)}${names.trim() ? " · " : ""}${esc(e.year)}${e.container ? " · " + esc(stripTags(e.container)) : ""} · ${esc(e.source)}</div>`;
+    const t = document.createElement("div");
+    t.className = "r-title";
+    t.textContent = stripTags(e.title) || "(タイトルなし)";
+    const m = document.createElement("div");
+    m.className = "r-meta";
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = (TYPES[e.type] || {}).ja || e.type;
+    m.appendChild(tag);
+    m.appendChild(document.createTextNode(
+      [names.trim(), e.year, stripTags(e.container), e.source].filter(Boolean).join(" · ")));
+    li.appendChild(t);
+    li.appendChild(m);
     const pick = () => {
       entry = Object.assign(blank(), items[i]);
       fillForm();
@@ -1027,10 +1119,17 @@ async function search(){
       status(`${items.length}件（${total - failed}/${total}のデータベースが応答）。該当するものを選んでください。`);
     }
   }catch(err){
-    const blocked = /Load failed|Failed to fetch|NetworkError|CORS/i.test(err.message || "");
+    const msg = err.message || "";
+    if(msg === "proxy-off" || err.name === "AbortError"){
+      status(err.name === "AbortError"
+        ? "時間内に応答がありませんでした。もう一度試すか、下のフォームに直接入力してください。"
+        : "この取得先はCORSを許可していないため、中継サーバーが必要です。上の「中継サーバーの使用を許可する」をオンにするか、下のフォームに直接入力してください。", true);
+      return;
+    }
+    const blocked = /Load failed|Failed to fetch|NetworkError|CORS/i.test(msg);
     status(blocked
       ? "外部への通信がブロックされています。このファイルをダウンロードして開くか、GitHub Pages 等に置いて実行してください（Claudeのプレビュー内では外部APIを呼べません）。下のフォームへの直接入力は使えます。"
-      : "取得できませんでした（" + err.message + "）。下のフォームに直接入力すれば整形できます。", true);
+      : "取得できませんでした（" + msg + "）。下のフォームに直接入力すれば整形できます。", true);
   }finally{
     $("go").disabled = false;
   }
@@ -1093,12 +1192,15 @@ function drawList(){
   ul.innerHTML = "";
   $("count").textContent = saved.length + "件";
   if(!saved.length){
-    ul.innerHTML = '<li class="empty">まだ何もありません。</li>';
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "まだ何もありません。";
+    ul.appendChild(li);
     return;
   }
   sortedSaved().forEach(item => {
     const li = document.createElement("li");
-    li.innerHTML = item.html;
+    li.innerHTML = sanitize(item.html);
     const btn = document.createElement("button");
     btn.className = "ghost small del";
     btn.textContent = "削除";
@@ -1128,6 +1230,7 @@ $("clear").addEventListener("click", () => {
 });
 
 applyTypeUI();
+loadMail();
 drawList();
 render();
 </script>

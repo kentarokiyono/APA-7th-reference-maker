@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-/kB8PsT2bMf8KBr6sNuwOEn0IYfEPr0ecKoaa+F23dc='; style-src 'sha256-5qhBOXxj+8A0V5S1K7Pf5YjTyfa0Ui+eZSrd1pfh8go='; connect-src https://api.crossref.org https://api.openalex.org https://api.semanticscholar.org https://api.datacite.org https://www.googleapis.com https://openlibrary.org https://cir.nii.ac.jp https://ndlsearch.ndl.go.jp https://eutils.ncbi.nlm.nih.gov https://api.allorigins.win; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://api.crossref.org https://api.openalex.org https://api.semanticscholar.org https://api.datacite.org https://www.googleapis.com https://openlibrary.org https://cir.nii.ac.jp https://ndlsearch.ndl.go.jp https://eutils.ncbi.nlm.nih.gov https://api.allorigins.win; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <title>APA参考文献ビルダー</title>
 <style>
 :root{
@@ -121,6 +121,7 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
     <div class="opts">
       <label class="toggle"><input type="checkbox" id="sentence" checked>タイトルを sentence case に</label>
       <label class="toggle"><input type="checkbox" id="jp-note">末尾に (in Japanese)</label>
+      <label class="toggle"><input type="checkbox" id="no-doi">DOI・URLを出力しない</label>
     </div>
   </div>
   <div class="sec-body">
@@ -413,11 +414,15 @@ function linkOf(e){
 }
 
 /* ============ APA 組み立て ============ */
-function buildHTML(e){
+function buildHTML(e, o){
+  o = o || {};
+  const optSentence = o.sentence !== undefined ? o.sentence : $("sentence").checked;
+  const optJpNote = o.jpNote !== undefined ? o.jpNote : $("jp-note").checked;
+  const optNoDoi = o.noDoi !== undefined ? o.noDoi : $("no-doi").checked;
   const t = TYPES[e.type] || TYPES.other;
   const A = joinAuthors(e.authors);
   const year = e.year.trim() || "n.d.";
-  let titleText = $("sentence").checked ? sentenceCase(e.title) : stripTags(e.title);
+  let titleText = optSentence ? sentenceCase(e.title) : stripTags(e.title);
   if(!titleText && !A) return "";
   let T = esc(titleText);
   if(e.translated.trim()) T += ` [${esc(stripTags(e.translated))}]`;
@@ -426,7 +431,7 @@ function buildHTML(e){
   const C = esc(stripTags(e.container));
   const P = esc(stripTags(e.publisher));
   const pages = esc(dash(e.pages));
-  const url = linkOf(e);
+  const url = optNoDoi ? "" : linkOf(e);
   const link = url ? (e.retrieved.trim()
     ? `Retrieved ${esc(e.retrieved.trim())}, from ${esc(url)}`
     : esc(url)) : "";
@@ -583,7 +588,7 @@ function buildHTML(e){
     }
   }
   push(link);
-  if($("jp-note").checked) push("(in Japanese)");
+  if(optJpNote) push("(in Japanese)");
 
   return parts.join(" ")
     .replace(/\s+/g, " ")
@@ -679,6 +684,8 @@ FORM_FIELDS.forEach(f => {
 });
 $("sentence").addEventListener("change", render);
 $("jp-note").addEventListener("change", render);
+/* DOI/URL の有無は出力全体に効く設定なので、保存済みリストも描き直す */
+$("no-doi").addEventListener("change", () => { render(); drawList(); });
 
 function render(){
   const html = buildHTML(entry);
@@ -1175,13 +1182,23 @@ $("copy-in").addEventListener("click", async e => {
   flash(e.target, "コピーしました");
 });
 $("add").addEventListener("click", e => {
-  const html = buildHTML(entry);
-  if(!toPlain(html).trim()) return;
+  if(!toPlain(buildHTML(entry)).trim()) return;
   const first = entry.authors[0];
   const key = (first ? first.family : (stripTags(entry.container) || stripTags(entry.title))).toLowerCase();
-  saved.push({html, key});
+  saved.push({
+    entry: JSON.parse(JSON.stringify(entry)),
+    sentence: $("sentence").checked,
+    jpNote: $("jp-note").checked,
+    key
+  });
   drawList();
   flash(e.target, "追加しました");
+});
+
+/* 追加時の設定（sentence case / in Japanese）は項目ごとに固定。
+   DOI・URLの有無だけは現在の設定を反映して描き直す */
+const renderSaved = item => buildHTML(item.entry, {
+  sentence: item.sentence, jpNote: item.jpNote, noDoi: $("no-doi").checked
 });
 $("reset").addEventListener("click", () => { entry = blank(); fillForm(); });
 
@@ -1200,7 +1217,7 @@ function drawList(){
   }
   sortedSaved().forEach(item => {
     const li = document.createElement("li");
-    li.innerHTML = sanitize(item.html);
+    li.innerHTML = sanitize(renderSaved(item));
     const btn = document.createElement("button");
     btn.className = "ghost small del";
     btn.textContent = "削除";
@@ -1211,14 +1228,14 @@ function drawList(){
 }
 $("copy-all").addEventListener("click", async e => {
   if(!saved.length) return;
-  const html = wrapFont(sortedSaved().map(s => `<p style="text-indent:-2em;padding-left:2em;margin:0 0 .6em">${s.html}</p>`).join(""));
-  const text = sortedSaved().map(s => toPlain(s.html)).join("\n\n");
+  const html = wrapFont(sortedSaved().map(s => `<p style="text-indent:-2em;padding-left:2em;margin:0 0 .6em">${sanitize(renderSaved(s))}</p>`).join(""));
+  const text = sortedSaved().map(s => toPlain(renderSaved(s))).join("\n\n");
   await copy(html, text);
   flash(e.target, "コピーしました");
 });
 $("download").addEventListener("click", () => {
   if(!saved.length) return;
-  const text = "References\n\n" + sortedSaved().map(s => toPlain(s.html)).join("\n\n");
+  const text = "References\n\n" + sortedSaved().map(s => toPlain(renderSaved(s))).join("\n\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([text], {type:"text/plain;charset=utf-8"}));
   a.download = "references.txt";

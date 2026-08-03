@@ -5,82 +5,329 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://api.crossref.org https://api.openalex.org https://api.semanticscholar.org https://api.datacite.org https://www.googleapis.com https://openlibrary.org https://cir.nii.ac.jp https://ndlsearch.ndl.go.jp https://eutils.ncbi.nlm.nih.gov https://api.allorigins.win; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
-<title>APA形式参考文献ビルダー</title>
+<title>APA参考文献ビルダー</title>
 <style>
 :root{
-  --ink:#1B2E4A;
-  --ink-soft:#5A6A82;
-  --paper:#E6E8EC;
+  color-scheme: light dark;
+  --bg:#F2F2F7;
   --card:#FFFFFF;
-  --rule:#C3C9D4;
-  --brass:#7A5C1E;
-  --brass-soft:#F0E9D6;
-  --warn:#8A3324;
-  --sans:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+  --card-2:rgba(118,118,128,.08);
+  --sep:rgba(60,60,67,.20);
+  --label:#000000;
+  --label-2:rgba(60,60,67,.60);
+  --label-3:rgba(60,60,67,.30);
+  --blue:#007AFF;
+  --blue-press:#0062CC;
+  --green:#34C759;
+  --red:#FF3B30;
+  --track:#E9E9EB;
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","Hiragino Sans","Noto Sans JP",sans-serif;
   --serif:"Times New Roman",Times,"YuMincho","Yu Mincho","Hiragino Mincho ProN","Noto Serif JP",serif;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px;
 }
-*{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
-.wrap{max-width:960px;margin:0 auto;padding:24px 16px 80px}
-header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:20px}
-h1{font-family:var(--serif);font-size:28px;font-weight:700;margin:0}
-header p{margin:4px 0 0;color:var(--ink-soft);font-size:13px}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin:0 0 6px}
-section{background:var(--card);border:1px solid var(--rule);margin-bottom:16px}
-.sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule);background:#F7F8FA;flex-wrap:wrap}
-.sec-head h2{font-size:13px;margin:0;font-weight:600;letter-spacing:.04em}
-.sec-body{padding:14px}
-.searchbar{display:flex;gap:8px;flex-wrap:wrap}
-input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:0;padding:9px 10px;width:100%}
-input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
-textarea{resize:vertical;min-height:56px;font-size:14px}
-button{font-family:inherit;font-size:14px;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink);padding:9px 16px}
-button:hover{background:#26405f}
-button.ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
-button.ghost:hover{background:#EEF1F5}
-button.small{padding:5px 10px;font-size:12px}
-button:disabled{opacity:.45;cursor:default}
-.hint{font-size:12px;color:var(--ink-soft);margin:8px 0 0}
-.qbox{flex:1 1 260px;width:auto}
-.panel-sub{margin-top:12px;border-top:1px solid var(--rule);padding-top:10px}
-.short{min-height:44px}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#000000;
+    --card:#1C1C1E;
+    --card-2:rgba(118,118,128,.24);
+    --sep:rgba(84,84,88,.60);
+    --label:#FFFFFF;
+    --label-2:rgba(235,235,245,.60);
+    --label-3:rgba(235,235,245,.30);
+    --blue:#0A84FF;
+    --blue-press:#409CFF;
+    --track:#39393D;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--label);
+  font-family:var(--sans);font-size:17px;line-height:1.47;
+  letter-spacing:-.012em;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px 96px}
+
+/* ---- ヘッダー ---- */
+header{padding:44px 4px 24px}
+.eyebrow{
+  font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--blue);margin:0 0 8px;
+}
+h1{font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.022em;margin:0}
+header p{margin:10px 0 0;font-size:15px;color:var(--label-2);letter-spacing:-.01em}
+
+/* ---- グループ（iOS の inset grouped list） ---- */
+section{margin:0 0 28px}
+.sec-head{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  padding:0 16px 8px;
+}
+.sec-head h2{
+  font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--label-2);margin:0;
+}
+.count{font-size:13px;color:var(--label-3);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.pad{padding:16px}
+.divider{border-top:.5px solid var(--sep)}
+
+/* ---- 入力 ---- */
+input,select,textarea{
+  font-family:inherit;font-size:17px;letter-spacing:-.012em;color:var(--label);
+  background:var(--card-2);border:none;border-radius:10px;padding:11px 12px;width:100%;
+  appearance:none;-webkit-appearance:none;
+}
+textarea{resize:vertical;min-height:64px;line-height:1.45}
+.short{min-height:46px}
+select{background-image:none;padding-right:34px}
+.select-wrap{position:relative}
+.select-wrap::after{
+  content:"";position:absolute;right:14px;top:50%;width:8px;height:8px;
+  border-right:2px solid var(--label-3);border-bottom:2px solid var(--label-3);
+  transform:translateY(-70%) rotate(45deg);pointer-events:none;
+}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{
+  outline:3px solid color-mix(in srgb, var(--blue) 40%, transparent);outline-offset:1px;
+}
+label{
+  display:block;font-size:13px;font-weight:500;color:var(--label-2);
+  letter-spacing:-.003em;margin:0 0 6px;
+}
+
+/* ---- 検索フィールド ---- */
+.searchbar{display:flex;gap:10px;align-items:center}
+.field{position:relative;flex:1 1 auto;min-width:0}
+.field svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.35}
+.field input{padding-left:36px;border-radius:12px;font-size:17px}
+
+/* ---- ボタン ---- */
+button{
+  font-family:inherit;font-size:17px;font-weight:600;letter-spacing:-.012em;
+  background:var(--blue);color:#fff;border:none;border-radius:12px;
+  padding:11px 20px;cursor:pointer;white-space:nowrap;
+}
+button:active{background:var(--blue-press)}
+button.ghost{background:var(--card-2);color:var(--blue);font-weight:500}
+button.ghost:active{opacity:.6}
+button.small{font-size:14px;padding:6px 12px;border-radius:9px}
+button.del{background:none;color:var(--red);padding:6px 4px;font-weight:400}
+button:disabled{opacity:.35;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .row.tight{margin-top:0}
-.privacy{font-size:12px;color:var(--ink-soft);line-height:1.5;margin:0}
-.privacy b{color:var(--ink);font-weight:600}
-.results{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
-.results li{border-top:1px solid var(--rule);padding:10px 14px;cursor:pointer}
+.row button{flex:1 1 auto}
+
+/* ---- スイッチ ---- */
+.toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  font-size:16px;font-weight:400;color:var(--label);margin:0;
+  min-height:44px;letter-spacing:-.012em;
+}
+.sw{
+  flex:0 0 auto;width:51px;height:31px;border-radius:16px;background:var(--track);
+  position:relative;cursor:pointer;transition:background .22s ease;padding:0;
+}
+.sw::after{
+  content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;
+  background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);
+  transition:transform .22s cubic-bezier(.32,.72,0,1);
+}
+.sw:checked{background:var(--green)}
+.sw:checked::after{transform:translateX(20px)}
+.rows>.toggle{padding:0 16px;border-top:.5px solid var(--sep)}
+.rows>.toggle:first-child{border-top:none}
+
+/* ---- 説明文 ---- */
+.hint{font-size:13px;line-height:1.45;color:var(--label-2);margin:10px 0 0}
+.privacy{font-size:13px;line-height:1.5;color:var(--label-2);margin:12px 0 0}
+.privacy b{color:var(--label);font-weight:600}
+.panel-sub{padding-top:16px;margin-top:16px;border-top:.5px solid var(--sep)}
+
+/* ---- 検索結果 ---- */
+.results{margin-top:12px;list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.results li{
+  position:relative;padding:14px 40px 14px 16px;cursor:pointer;
+  border-top:.5px solid var(--sep);
+}
 .results li:first-child{border-top:none}
-.results li:hover,.results li:focus-visible{background:var(--brass-soft);outline:none}
-.r-title{font-family:var(--serif);font-size:17px;line-height:1.35}
-.r-meta{font-size:12px;color:var(--ink-soft);margin-top:3px}
-.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);border:1px solid var(--brass);padding:1px 5px;margin-right:6px;white-space:nowrap}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 12px}
+.results li::after{
+  content:"";position:absolute;right:18px;top:50%;width:8px;height:8px;
+  border-top:2px solid var(--label-3);border-right:2px solid var(--label-3);
+  transform:translateY(-50%) rotate(45deg);
+}
+.results li:active,.results li:focus-visible{background:var(--card-2);outline:none}
+.r-title{font-family:var(--serif);font-size:18px;line-height:1.3;letter-spacing:0}
+.r-meta{font-size:13px;color:var(--label-2);margin-top:4px}
+.tag{
+  display:inline-block;font-size:11px;font-weight:600;letter-spacing:.01em;
+  color:var(--blue);background:color-mix(in srgb, var(--blue) 12%, transparent);
+  padding:2px 8px;border-radius:6px;margin-right:8px;
+}
+.status{font-size:14px;color:var(--label-2);padding:14px 16px;border-top:.5px solid var(--sep)}
+.status.err{color:var(--red)}
+
+/* ---- フォーム ---- */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .grid>div{grid-column:span 2}
 .grid>div.full{grid-column:1/-1}
 .grid>div.qtr{grid-column:span 1}
-label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:3px}
-.output{font-family:var(--serif);font-size:18px;line-height:1.5;padding:16px 16px 16px 20px;border-left:3px solid var(--brass);background:#FBFAF7;padding-left:calc(20px + 2.2em);text-indent:-2.2em}
-.intext{font-family:var(--serif);font-size:16px;margin-top:10px;color:var(--ink-soft)}
-.intext b{font-weight:400;color:var(--ink)}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.list{list-style:none;margin:0;padding:0}
-.list li{font-family:var(--serif);font-size:17px;border-top:1px solid var(--rule);padding:12px 70px 12px calc(14px + 2.2em);text-indent:-2.2em;position:relative}
-.list li:first-child{border-top:none}
-.list .del{position:absolute;right:8px;top:9px;text-indent:0}
-.empty{padding:14px;color:var(--ink-soft);font-size:13px;font-family:var(--sans);text-indent:0}
-.status{font-size:13px;color:var(--ink-soft);padding:12px 14px;border-top:1px solid var(--rule)}
-.status.err{color:var(--warn)}
-.toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin:0}
-.toggle input{width:auto}
-.proxy-row{margin:10px 0 8px}
-.opts{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
-.count{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
-@media(max-width:700px){
-  .grid{grid-template-columns:repeat(2,1fr)}
-  .grid>div.qtr{grid-column:span 1}
-  .output,.list li{font-size:16px}
+
+/* ---- 出力 ---- */
+.output{
+  font-family:var(--serif);font-size:19px;line-height:1.45;letter-spacing:0;
+  padding:18px 18px 18px calc(18px + 2em);text-indent:-2em;
+  background:var(--card-2);border-radius:12px;
+  -webkit-user-select:text;user-select:text;
 }
+.intext{font-size:14px;color:var(--label-2);margin-top:14px;line-height:1.7}
+.intext b{font-family:var(--serif);font-size:16px;font-weight:400;color:var(--label)}
+
+/* ---- 文献リスト ---- */
+.list{list-style:none;margin:0;padding:0}
+.list li{
+  font-family:var(--serif);font-size:18px;line-height:1.45;letter-spacing:0;
+  position:relative;border-top:.5px solid var(--sep);
+  padding:16px 16px 44px calc(16px + 2em);text-indent:-2em;
+}
+.list li:first-child{border-top:none}
+.list .del{position:absolute;right:10px;bottom:8px;text-indent:0;font-family:var(--sans);font-size:14px}
+.empty{padding:18px 16px;color:var(--label-3);font-family:var(--sans);font-size:15px;text-indent:0}
+
+@media (max-width:600px){
+  .wrap{padding:0 16px 96px}
+  header{padding:32px 2px 20px}
+  h1{font-size:30px}
+  .grid{grid-template-columns:repeat(2,1fr);gap:14px}
+  .output{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+
+/* ============================================================
+   マウス操作の広い画面 = macOS（システム設定）のインタフェースに寄せる
+   ============================================================ */
+@media (min-width:860px) and (pointer:fine){
+  :root{
+    --bg:#F0F0F3;
+    --card:#FFFFFF;
+    --card-2:rgba(0,0,0,.04);
+    --sep:rgba(0,0,0,.09);
+    --border:rgba(0,0,0,.12);
+    --label-2:rgba(0,0,0,.55);
+    --label-3:rgba(0,0,0,.32);
+    --track:#DDDDE0;
+    --shadow:0 1px 2px rgba(0,0,0,.05);
+    --r:10px;
+  }
+  body{font-size:13px;line-height:1.42;letter-spacing:-.004em}
+  .wrap{max-width:840px;padding:0 32px 64px}
+
+  /* ウインドウのツールバー相当 */
+  header{
+    position:sticky;top:0;z-index:20;margin:0 -32px 24px;padding:14px 32px 13px;
+    background:color-mix(in srgb, var(--bg) 72%, transparent);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);
+    backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:1px solid var(--sep);
+  }
+  .eyebrow{display:none}
+  h1{font-size:15px;font-weight:600;letter-spacing:-.006em;line-height:1.2}
+  header p{margin-top:2px;font-size:12px}
+
+  section{margin-bottom:22px}
+  .sec-head{padding:0 2px 6px}
+  .sec-head h2{font-size:11px;letter-spacing:.05em}
+  .count{font-size:11px}
+  .card{border:1px solid var(--sep)}
+  .pad{padding:14px}
+
+  /* 行の高さを macOS のコンパクトな寸法に */
+  .toggle{min-height:34px;font-size:13px;gap:12px}
+  .rows>.toggle{padding:0 14px}
+  .sw{width:38px;height:22px;border-radius:11px}
+  .sw::after{width:18px;height:18px;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,.22)}
+  .sw:checked::after{transform:translateX(16px)}
+
+  label{font-size:11px;margin-bottom:4px}
+  input,select,textarea{
+    font-size:13px;background:var(--card);border:1px solid var(--border);
+    border-radius:6px;padding:5px 8px;box-shadow:inset 0 1px 1px rgba(0,0,0,.03);
+  }
+  textarea{min-height:52px}
+  .short{min-height:38px}
+  input:focus,select:focus,textarea:focus{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--blue) 25%, transparent);
+    outline:none;
+  }
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none}
+  .field input{padding-left:26px;border-radius:6px;font-size:13px}
+  .field svg{left:7px;width:13px;height:13px}
+  .select-wrap::after{width:6px;height:6px;right:10px}
+
+  /* ボタン: 既定ボタンは青、それ以外はベゼル */
+  button{
+    font-size:13px;font-weight:400;border-radius:6px;padding:5px 14px;
+    box-shadow:0 1px 1px rgba(0,0,0,.06);
+  }
+  button.ghost{
+    background:var(--card);color:var(--label);border:1px solid var(--border);font-weight:400;
+  }
+  button.small{font-size:12px;padding:3px 9px}
+  button.del{border:none;box-shadow:none;background:none;padding:3px 6px}
+  .row{gap:8px;margin-top:14px}
+  .row button{flex:0 0 auto}
+
+  .hint,.privacy{font-size:12px;line-height:1.5}
+  .panel-sub{padding-top:14px;margin-top:14px}
+
+  /* リストは macOS の一覧: シェブロンなし、ホバーで薄く反転 */
+  .results{max-height:340px;margin-top:10px}
+  .results li{padding:9px 14px}
+  .results li::after{display:none}
+  .r-title{font-size:15px}
+  .r-meta{font-size:11px;margin-top:2px}
+  .tag{font-size:10px;padding:1px 6px;margin-right:6px}
+  .status{font-size:12px;padding:10px 14px}
+
+  .grid{gap:12px 14px}
+  .output{font-size:16px;padding:14px 14px 14px calc(14px + 2em);border-radius:8px}
+  .intext{font-size:12px;margin-top:12px}
+  .intext b{font-size:14px}
+  .list li{font-size:15px;padding:12px 90px 12px calc(14px + 2em)}
+  .list .del{bottom:auto;top:9px;right:10px;font-size:12px}
+  .empty{font-size:13px;padding:14px}
+}
+
+/* ポインタがある環境だけホバーを出す */
+@media (hover:hover) and (pointer:fine){
+  .results li:hover{background:var(--card-2)}
+  button:hover{filter:brightness(1.06)}
+  button.ghost:hover{background:color-mix(in srgb, var(--label) 5%, var(--card))}
+  button.del:hover{background:color-mix(in srgb, var(--red) 10%, transparent)}
+  .sw{cursor:pointer}
+}
+
+@media (min-width:860px) and (pointer:fine) and (prefers-color-scheme:dark){
+  :root{
+    --bg:#1E1E1E;
+    --card:#2C2C2E;
+    --card-2:rgba(255,255,255,.06);
+    --sep:rgba(255,255,255,.10);
+    --border:rgba(255,255,255,.16);
+    --label-2:rgba(255,255,255,.58);
+    --label-3:rgba(255,255,255,.34);
+    --track:#48484A;
+  }
+  input,select,textarea{background:rgba(0,0,0,.22);box-shadow:none}
+  button.ghost{background:#3A3A3C}
+}
+
 </style>
 </head>
 <body>
@@ -93,86 +340,96 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
 </header>
 
 <section>
-  <div class="sec-head">
-    <h2>1. 検索</h2>
-    <label class="toggle"><input type="checkbox" id="jp-src" checked>日本語データベース（CiNii・国会図書館）も使う</label>
-  </div>
-  <div class="sec-body">
-    <div class="searchbar">
-      <input id="q" placeholder="タイトル / DOI / ISBN / URL / PMID" class="qbox">
-      <button id="go">検索</button>
+  <div class="sec-head"><h2>検索</h2></div>
+  <div class="card">
+    <div class="pad">
+      <div class="searchbar">
+        <div class="field">
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="2"/>
+            <path d="M11 11l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input id="q" placeholder="タイトル / DOI / ISBN / URL / PMID" enterkeyhint="search">
+        </div>
+        <button id="go">検索</button>
+      </div>
+      <p class="hint">Crossref・OpenAlex・Semantic Scholar・DataCite・Google Books・Open Library・CiNii Research・国立国会図書館サーチ。DOI／ISBN／PMID／arXiv は直接照会、Web ページは本文からメタデータを抽出します。</p>
     </div>
-    <p class="hint">Crossref・OpenAlex・Semantic Scholar・DataCite・Google Books・Open Library・CiNii Research・国立国会図書館サーチ。DOI/ISBN/PMID/arXivは直接照会、Webページは本文からメタデータを抽出します。</p>
-    <div class="panel-sub">
-      <label for="mailto">連絡先メールアドレス（任意）— Crossref と OpenAlex の優先処理枠（polite pool）に入り、混雑時も速くなる。この端末にのみ保存され、送信先は両APIだけ。</label>
-      <input id="mailto" type="email" placeholder="you@example.ac.jp" autocomplete="email">
+
+    <div class="rows divider">
+      <label class="toggle">日本語データベースも使う<input class="sw" type="checkbox" id="jp-src" checked></label>
+      <label class="toggle">中継サーバーの使用を許可する<input class="sw" type="checkbox" id="use-proxy"></label>
+    </div>
+
+    <div class="pad divider">
+      <label for="mailto">連絡先メールアドレス（任意）</label>
+      <input id="mailto" type="email" placeholder="you@example.ac.jp" autocomplete="email" inputmode="email">
       <p class="hint" id="mailto-state"></p>
-      <label class="toggle proxy-row"><input type="checkbox" id="use-proxy">中継サーバー（allorigins）の使用を許可する</label>
-      <p class="privacy">外部に出るのは<b>検索のときだけ</b>です。整形・編集・リスト・コピー・保存はすべてこの端末の中で完結し、入力内容やリストはどこにも送信・保存されません（保存されるのは上のメールアドレスのみ、この端末のブラウザ内）。中継サーバーを許可すると、CORSを許可していない先（CiNii・国会図書館・一般Webページ）も取得できますが、<b>その取得先URLが第三者のサーバーを経由します</b>。既定はオフです。</p>
+      <p class="privacy">Crossref と OpenAlex の優先処理枠（polite pool）に入り、混雑時も速くなります。外部に出るのは<b>検索のときだけ</b>で、整形・編集・リスト・コピー・保存はすべてこの端末の中で完結します。保存されるのはこのアドレスのみ（この端末のブラウザ内）。中継サーバーを許可すると CiNii・国会図書館・一般 Web ページも取得できますが、<b>取得先の URL が第三者のサーバーを経由します</b>。既定はオフです。</p>
     </div>
   </div>
   <div id="status" class="status" hidden></div>
-  <ul id="results" class="results"></ul>
+  <ul id="results" class="results card"></ul>
 </section>
 
 <section>
-  <div class="sec-head">
-    <h2>2. 内容の確認・修正</h2>
-    <div class="opts">
-      <label class="toggle"><input type="checkbox" id="sentence" checked>タイトルを sentence case に</label>
-      <label class="toggle"><input type="checkbox" id="jp-note">末尾に (in Japanese)</label>
-      <label class="toggle"><input type="checkbox" id="no-doi">DOI・URLを出力しない</label>
+  <div class="sec-head"><h2>内容の確認・修正</h2></div>
+  <div class="card">
+    <div class="rows">
+      <label class="toggle">タイトルを sentence case に<input class="sw" type="checkbox" id="sentence" checked></label>
+      <label class="toggle">末尾に (in Japanese)<input class="sw" type="checkbox" id="jp-note"></label>
+      <label class="toggle">DOI・URL を出力しない<input class="sw" type="checkbox" id="no-doi"></label>
     </div>
-  </div>
-  <div class="sec-body">
-    <div class="grid">
-      <div class="full" id="w-type">
-        <label for="f-type">資料の種類</label>
-        <select id="f-type"></select>
+    <div class="pad divider">
+      <div class="grid">
+        <div class="full" id="w-type">
+          <label for="f-type">資料の種類</label>
+          <div class="select-wrap"><select id="f-type"></select></div>
+        </div>
+        <div class="full" id="w-authors">
+          <label for="f-authors">著者（1人1行 /「姓, 名」。団体名はそのまま1行）</label>
+          <textarea id="f-authors" placeholder="Kiyono, Kentaro"></textarea>
+        </div>
+        <div id="w-year">
+          <label for="f-year">日付</label>
+          <input id="f-year" placeholder="2026 / 2026, August 3">
+        </div>
+        <div id="w-doi">
+          <label for="f-doi">DOI または URL</label>
+          <input id="f-doi" inputmode="url">
+        </div>
+        <div class="full" id="w-title">
+          <label for="f-title">タイトル</label>
+          <textarea id="f-title"></textarea>
+        </div>
+        <div class="full" id="w-translated">
+          <label for="f-translated">訳題（英語論文に和文献を入れる場合。角括弧で出力）</label>
+          <input id="f-translated" placeholder="Tourism-led recovery in Okuma Town">
+        </div>
+        <div class="full" id="w-container">
+          <label for="f-container">掲載誌</label>
+          <input id="f-container">
+        </div>
+        <div class="qtr" id="w-volume"><label for="f-volume">巻</label><input id="f-volume" inputmode="numeric"></div>
+        <div class="qtr" id="w-issue"><label for="f-issue">号</label><input id="f-issue" inputmode="numeric"></div>
+        <div id="w-pages"><label for="f-pages">ページ</label><input id="f-pages" placeholder="45-67"></div>
+        <div id="w-number"><label for="f-number">番号</label><input id="f-number"></div>
+        <div id="w-edition"><label for="f-edition">版 / バージョン</label><input id="f-edition"></div>
+        <div id="w-publisher"><label for="f-publisher">出版社 / 発行機関</label><input id="f-publisher"></div>
+        <div id="w-location"><label for="f-location">開催地</label><input id="f-location"></div>
+        <div class="full" id="w-editors"><label for="f-editors">編者（1人1行）</label><textarea id="f-editors" class="short"></textarea></div>
+        <div class="full" id="w-descriptor"><label for="f-descriptor">角括弧の注記（自動。上書き可）</label><input id="f-descriptor" placeholder="Data set / Map / Press release など"></div>
+        <div class="full" id="w-retrieved"><label for="f-retrieved">閲覧日（内容が変わるページのみ。例: August 3, 2026）</label><input id="f-retrieved"></div>
       </div>
-      <div class="full" id="w-authors">
-        <label for="f-authors">著者（1人1行 / 「姓, 名」。団体名はそのまま1行）</label>
-        <textarea id="f-authors" placeholder="Kiyono, Kentaro"></textarea>
-      </div>
-      <div id="w-year">
-        <label for="f-year">日付</label>
-        <input id="f-year" placeholder="2026 / 2026, August 3">
-      </div>
-      <div id="w-doi">
-        <label for="f-doi">DOI または URL</label>
-        <input id="f-doi">
-      </div>
-      <div class="full" id="w-title">
-        <label for="f-title">タイトル</label>
-        <textarea id="f-title"></textarea>
-      </div>
-      <div class="full" id="w-translated">
-        <label for="f-translated">訳題（英語論文に和文献を入れる場合。角括弧で出力）</label>
-        <input id="f-translated" placeholder="Tourism-led recovery in Okuma Town">
-      </div>
-      <div class="full" id="w-container">
-        <label for="f-container">掲載誌</label>
-        <input id="f-container">
-      </div>
-      <div class="qtr" id="w-volume"><label for="f-volume">巻</label><input id="f-volume"></div>
-      <div class="qtr" id="w-issue"><label for="f-issue">号</label><input id="f-issue"></div>
-      <div id="w-pages"><label for="f-pages">ページ</label><input id="f-pages" placeholder="45-67"></div>
-      <div id="w-number"><label for="f-number">番号</label><input id="f-number"></div>
-      <div id="w-edition"><label for="f-edition">版 / バージョン</label><input id="f-edition"></div>
-      <div id="w-publisher"><label for="f-publisher">出版社 / 発行機関</label><input id="f-publisher"></div>
-      <div id="w-location"><label for="f-location">開催地</label><input id="f-location"></div>
-      <div class="full" id="w-editors"><label for="f-editors">編者（1人1行）</label><textarea id="f-editors" class="short"></textarea></div>
-      <div class="full" id="w-descriptor"><label for="f-descriptor">角括弧の注記（自動。上書き可）</label><input id="f-descriptor" placeholder="Data set / Map / Press release など"></div>
-      <div class="full" id="w-retrieved"><label for="f-retrieved">閲覧日（内容が変わるページのみ。例: August 3, 2026）</label><input id="f-retrieved"></div>
     </div>
   </div>
 </section>
 
 <section>
-  <div class="sec-head"><h2>3. 出力</h2></div>
-  <div class="sec-body">
+  <div class="sec-head"><h2>出力</h2></div>
+  <div class="card pad">
     <div id="out" class="output">まだ何も選ばれていません。</div>
-    <div class="intext">本文中：<b id="intext-p"></b> ／ 文章形式：<b id="intext-n"></b></div>
+    <p class="intext">本文中　<b id="intext-p"></b><br>文章形式　<b id="intext-n"></b></p>
     <div class="row">
       <button id="copy">参考文献をコピー</button>
       <button id="copy-in" class="ghost">本文中の引用をコピー</button>
@@ -187,12 +444,14 @@ label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);ma
     <h2>参考文献リスト</h2>
     <span class="count" id="count">0件</span>
   </div>
-  <ul id="list" class="list"></ul>
-  <div class="sec-body">
-    <div class="row tight">
-      <button id="copy-all" class="ghost">全部コピー（アルファベット順）</button>
-      <button id="download" class="ghost">.txt で保存</button>
-      <button id="clear" class="ghost">リストを空にする</button>
+  <div class="card">
+    <ul id="list" class="list"></ul>
+    <div class="pad divider">
+      <div class="row tight">
+        <button id="copy-all" class="ghost">全部コピー（アルファベット順）</button>
+        <button id="download" class="ghost">.txt で保存</button>
+        <button id="clear" class="ghost">リストを空にする</button>
+      </div>
     </div>
   </div>
 </section>
